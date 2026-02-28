@@ -95,17 +95,53 @@ public partial class MainWindow : Window
         _isExpanded = true;
         _viewModel.IsExpanded = true;
         
-        // Switch content first
-        CollapsedContent.Visibility = Visibility.Collapsed;
-        ExpandedContent.Visibility = Visibility.Visible;
+        // Get the expand animation from resources
+        var expandAnim = (Storyboard)App.Current.Resources["ExpandAnimation"];
+        var expandClone = expandAnim.Clone();
         
-        // Set size directly
-        Width = 400;
-        Height = 200;
-        
-        // Center window
+        // Calculate center position for expanded state
         var screenWidth = SystemParameters.PrimaryScreenWidth;
-        Left = (screenWidth - 400) / 2;
+        var targetLeft = (screenWidth - 400) / 2;
+        
+        // Animate window position smoothly
+        var leftAnim = new DoubleAnimation
+        {
+            To = targetLeft,
+            Duration = TimeSpan.FromSeconds(0.5),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        
+        // Start content fade transition
+        CollapsedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+        {
+            From = 1,
+            To = 0,
+            Duration = TimeSpan.FromSeconds(0.2),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        });
+        
+        // After a short delay, switch content and fade in
+        var switchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.15) };
+        switchTimer.Tick += (s, e) =>
+        {
+            switchTimer.Stop();
+            CollapsedContent.Visibility = Visibility.Collapsed;
+            ExpandedContent.Visibility = Visibility.Visible;
+            ExpandedContent.Opacity = 0;
+            
+            ExpandedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromSeconds(0.35),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        };
+        switchTimer.Start();
+        
+        // Start all animations
+        this.BeginAnimation(Window.LeftProperty, leftAnim);
+        expandClone.Begin(this);
     }
 
     private void CollapseIsland()
@@ -116,17 +152,53 @@ public partial class MainWindow : Window
         _viewModel.IsExpanded = false;
         _idleTimer.Stop();
         
-        // Switch content first
-        ExpandedContent.Visibility = Visibility.Collapsed;
-        CollapsedContent.Visibility = Visibility.Visible;
+        // Get the collapse animation from resources
+        var collapseAnim = (Storyboard)App.Current.Resources["CollapseAnimation"];
+        var collapseClone = collapseAnim.Clone();
         
-        // Set size directly
-        Width = 150;
-        Height = 40;
-        
-        // Center window
+        // Calculate center position for collapsed state
         var screenWidth = SystemParameters.PrimaryScreenWidth;
-        Left = (screenWidth - 150) / 2;
+        var targetLeft = (screenWidth - 150) / 2;
+        
+        // Animate window position smoothly
+        var leftAnim = new DoubleAnimation
+        {
+            To = targetLeft,
+            Duration = TimeSpan.FromSeconds(0.5),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        
+        // Start content fade transition
+        ExpandedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+        {
+            From = 1,
+            To = 0,
+            Duration = TimeSpan.FromSeconds(0.2),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
+        });
+        
+        // After a short delay, switch content and fade in
+        var switchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.15) };
+        switchTimer.Tick += (s, e) =>
+        {
+            switchTimer.Stop();
+            ExpandedContent.Visibility = Visibility.Collapsed;
+            CollapsedContent.Visibility = Visibility.Visible;
+            CollapsedContent.Opacity = 0;
+            
+            CollapsedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+            {
+                From = 0,
+                To = 1,
+                Duration = TimeSpan.FromSeconds(0.35),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+            });
+        };
+        switchTimer.Start();
+        
+        // Start all animations
+        this.BeginAnimation(Window.LeftProperty, leftAnim);
+        collapseClone.Begin(this);
     }
 
     private void ResetIdleTimer()

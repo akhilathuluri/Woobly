@@ -1,44 +1,48 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     
-    <!-- Ultra Smooth Expand Animation -->
+    <!-- Ultra Smooth Expand Animation - Apple Dynamic Island Style -->
     <Storyboard x:Key="ExpandAnimation">
-        <!-- Width Animation -->
+        <!-- Width Animation with spring-like easing -->
         <DoubleAnimation Storyboard.TargetProperty="Width"
+                       From="150"
                        To="400"
-                       Duration="0:0:0.4">
+                       Duration="0:0:0.5">
             <DoubleAnimation.EasingFunction>
-                <QuadraticEase EasingMode="EaseOut"/>
+                <CubicEase EasingMode="EaseOut"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
         
-        <!-- Height Animation -->
+        <!-- Height Animation with spring-like easing -->
         <DoubleAnimation Storyboard.TargetProperty="Height"
+                       From="40"
                        To="200"
-                       Duration="0:0:0.4">
+                       Duration="0:0:0.5">
             <DoubleAnimation.EasingFunction>
-                <QuadraticEase EasingMode="EaseOut"/>
+                <CubicEase EasingMode="EaseOut"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
     </Storyboard>
     
-    <!-- Ultra Smooth Collapse Animation -->
+    <!-- Ultra Smooth Collapse Animation - Apple Dynamic Island Style -->
     <Storyboard x:Key="CollapseAnimation">
-        <!-- Width Animation -->
+        <!-- Width Animation with smooth easing -->
         <DoubleAnimation Storyboard.TargetProperty="Width"
+                       From="400"
                        To="150"
-                       Duration="0:0:0.4">
+                       Duration="0:0:0.5">
             <DoubleAnimation.EasingFunction>
-                <QuadraticEase EasingMode="EaseInOut"/>
+                <CubicEase EasingMode="EaseInOut"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
         
-        <!-- Height Animation -->
+        <!-- Height Animation with smooth easing -->
         <DoubleAnimation Storyboard.TargetProperty="Height"
+                       From="200"
                        To="40"
-                       Duration="0:0:0.4">
+                       Duration="0:0:0.5">
             <DoubleAnimation.EasingFunction>
-                <QuadraticEase EasingMode="EaseInOut"/>
+                <CubicEase EasingMode="EaseInOut"/>
             </DoubleAnimation.EasingFunction>
         </DoubleAnimation>
     </Storyboard>
