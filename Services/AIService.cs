@@ -62,12 +62,54 @@ namespace Woobly.Services
                 var json = JObject.Parse(responseText);
                 var aiResponse = json["choices"]?[0]?["message"]?["content"]?.Value<string>();
 
-                return aiResponse ?? "No response received.";
+                if (string.IsNullOrWhiteSpace(aiResponse))
+                    return "No response received.";
+
+                // Sanitize and format the response
+                return SanitizeResponse(aiResponse);
             }
             catch (Exception ex)
             {
                 return $"Error: {ex.Message}";
             }
+        }
+
+        private string SanitizeResponse(string response)
+        {
+            if (string.IsNullOrWhiteSpace(response))
+                return response;
+
+            // Remove excessive whitespace and normalize line breaks
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"\r\n|\r|\n", "\n");
+            
+            // Remove multiple consecutive blank lines (keep max 1 blank line)
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"\n{3,}", "\n\n");
+            
+            // Remove leading/trailing whitespace from each line
+            var lines = response.Split('\n');
+            for (int i = 0; i < lines.Length; i++)
+            {
+                lines[i] = lines[i].Trim();
+            }
+            response = string.Join("\n", lines);
+            
+            // Remove markdown code block markers for cleaner display
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"```[\w]*\n?", "");
+            
+            // Remove excessive spaces
+            response = System.Text.RegularExpressions.Regex.Replace(response, @" {2,}", " ");
+            
+            // Clean up markdown bold/italic for better readability
+            response = response.Replace("**", "");
+            response = response.Replace("__", "");
+            
+            // Convert markdown lists to simple format
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\* ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^- ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\d+\. ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
+            
+            // Trim final result
+            return response.Trim();
         }
     }
 }
