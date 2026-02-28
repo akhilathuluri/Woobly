@@ -78,16 +78,19 @@
                     </StackPanel.RenderTransform>
                     <TextBlock Text="{Binding SystemInfo.FormattedTime}"
                               Foreground="{StaticResource PrimaryTextBrush}"
-                              FontSize="12"
+                              FontFamily="Space Grotesk"
+                              FontSize="13"
                               FontWeight="SemiBold"
                               Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°}"
                               Foreground="{StaticResource SecondaryTextBrush}"
-                              FontSize="12"
+                              FontFamily="Space Grotesk"
+                              FontSize="13"
                               Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
                               Foreground="{StaticResource SecondaryTextBrush}"
-                              FontSize="12"/>
+                              FontFamily="Space Grotesk"
+                              FontSize="13"/>
                 </StackPanel>
                 
                 <!-- Expanded State Content -->
@@ -102,24 +105,30 @@
                             </StackPanel.RenderTransform>
                             <TextBlock Text="{Binding SystemInfo.FormattedTime}"
                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                      FontFamily="Space Grotesk"
                                       FontSize="36"
                                       FontWeight="Light"
-                                      HorizontalAlignment="Center"/>
+                                      HorizontalAlignment="Center"
+                                      Margin="0,0,0,4"/>
                             <TextBlock Text="{Binding SystemInfo.FormattedDate}"
                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                      FontFamily="Space Grotesk"
                                       FontSize="13"
+                                      FontWeight="Normal"
                                       HorizontalAlignment="Center"
-                                      Margin="0,4,0,20"/>
+                                      Margin="0,0,0,20"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <StackPanel Margin="15,0">
                                     <TextBlock Text="Weather"
                                               Foreground="{StaticResource TertiaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="10"
                                               FontWeight="Medium"
                                               HorizontalAlignment="Center"
-                                              Margin="0,0,0,4"/>
+                                              Margin="0,0,0,6"/>
                                     <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°C}"
                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="20"
                                               FontWeight="SemiBold"
                                               HorizontalAlignment="Center"/>
@@ -127,12 +136,14 @@
                                 <StackPanel Margin="15,0">
                                     <TextBlock Text="Battery"
                                               Foreground="{StaticResource TertiaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="10"
                                               FontWeight="Medium"
                                               HorizontalAlignment="Center"
-                                              Margin="0,0,0,4"/>
+                                              Margin="0,0,0,6"/>
                                     <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="20"
                                               FontWeight="SemiBold"
                                               HorizontalAlignment="Center"/>
@@ -147,37 +158,48 @@
                             </StackPanel.RenderTransform>
                             <TextBlock Text="No Media Playing"
                                       Foreground="{StaticResource TertiaryTextBrush}"
+                                      FontFamily="Space Grotesk"
                                       FontSize="13"
+                                      FontWeight="Normal"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Margin="0,70,0,0"
                                       Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
                             
                             <StackPanel Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
-                                       Margin="0,10,0,0">
+                                       Margin="0,15,0,0">
                                 <TextBlock Text="{Binding MediaInfo.Title}"
                                           Foreground="{StaticResource PrimaryTextBrush}"
+                                          FontFamily="Space Grotesk"
                                           FontSize="16"
                                           FontWeight="SemiBold"
                                           TextTrimming="CharacterEllipsis"
                                           HorizontalAlignment="Center"
-                                          Margin="0,0,0,4"/>
+                                          Margin="0,0,0,6"/>
                                 <TextBlock Text="{Binding MediaInfo.Artist}"
                                           Foreground="{StaticResource SecondaryTextBrush}"
-                                          FontSize="12"
+                                          FontFamily="Space Grotesk"
+                                          FontSize="11"
+                                          FontWeight="Normal"
                                           TextTrimming="CharacterEllipsis"
                                           HorizontalAlignment="Center"
-                                          Margin="0,0,0,15"/>
+                                          Margin="0,0,0,18"/>
                                 
-                                <!-- Modern Progress Bar -->
+                                <!-- Modern Progress Bar with Gradient -->
                                 <Border Background="{StaticResource SecondaryBackgroundBrush}"
-                                       Height="4"
-                                       CornerRadius="2"
-                                       Margin="20,0">
+                                       Height="5"
+                                       CornerRadius="3"
+                                       Margin="25,0">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000" BlurRadius="4" ShadowDepth="0" Opacity="0.3"/>
+                                    </Border.Effect>
                                     <Rectangle Fill="{StaticResource AccentBrush}"
                                               HorizontalAlignment="Left"
-                                              RadiusX="2"
-                                              RadiusY="2">
+                                              RadiusX="3"
+                                              RadiusY="3">
+                                        <Rectangle.Effect>
+                                            <DropShadowEffect Color="#2D9CDB" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
+                                        </Rectangle.Effect>
                                         <Rectangle.Width>
                                             <MultiBinding>
                                                 <MultiBinding.Converter>
@@ -192,16 +214,21 @@
                                 
                                 <StackPanel Orientation="Horizontal" 
                                           HorizontalAlignment="Center"
-                                          Margin="0,8,0,0">
+                                          Margin="0,10,0,0">
                                     <TextBlock Text="{Binding MediaInfo.FormattedPosition}"
                                               Foreground="{StaticResource TertiaryTextBrush}"
-                                              FontSize="10"/>
+                                              FontFamily="Space Grotesk"
+                                              FontSize="10"
+                                              FontWeight="Medium"/>
                                     <TextBlock Text=" / "
                                               Foreground="{StaticResource TertiaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="10"/>
                                     <TextBlock Text="{Binding MediaInfo.FormattedDuration}"
                                               Foreground="{StaticResource TertiaryTextBrush}"
-                                              FontSize="10"/>
+                                              FontFamily="Space Grotesk"
+                                              FontSize="10"
+                                              FontWeight="Medium"/>
                                 </StackPanel>
                             </StackPanel>
                         </StackPanel>
@@ -216,28 +243,32 @@
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
-                                        BorderThickness="1"
-                                        Padding="12,10"
-                                        FontSize="12"
+                                        BorderThickness="1.5"
+                                        Padding="14,12"
+                                        FontSize="13"
+                                        FontFamily="Space Grotesk"
                                         CaretBrush="#2D9CDB"
                                         SelectionBrush="#2D9CDB"
                                         TextWrapping="Wrap"
-                                        Height="40"
-                                        Margin="0,0,0,10"
+                                        Height="45"
+                                        Margin="0,0,0,12"
                                         VerticalContentAlignment="Center"
                                         KeyDown="AIInputBox_KeyDown">
                                     <TextBox.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="10"/>
                                         </Style>
                                     </TextBox.Resources>
                                 </TextBox>
                                 <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
                                     <TextBlock Text="{Binding AIResponse}"
                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                              FontFamily="Space Grotesk"
                                               FontSize="11"
+                                              FontWeight="Normal"
                                               TextWrapping="Wrap"
-                                              Padding="5"/>
+                                              LineHeight="18"
+                                              Padding="6"/>
                                 </ScrollViewer>
                             </StackPanel>
                         </Grid>
@@ -252,17 +283,19 @@
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
-                                        BorderThickness="1"
-                                        Padding="12,10"
-                                        FontSize="12"
+                                        BorderThickness="1.5"
+                                        Padding="14,12"
+                                        FontSize="13"
+                                        FontFamily="Space Grotesk"
                                         CaretBrush="#2D9CDB"
                                         SelectionBrush="#2D9CDB"
                                         VerticalContentAlignment="Center"
-                                        Margin="0,0,0,10"
+                                        Height="45"
+                                        Margin="0,0,0,12"
                                         KeyDown="TaskInputBox_KeyDown">
                                     <TextBox.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="10"/>
                                         </Style>
                                     </TextBox.Resources>
                                 </TextBox>
@@ -270,16 +303,19 @@
                                     <ItemsControl ItemsSource="{Binding Tasks}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
-                                                <StackPanel Orientation="Horizontal" Margin="0,3">
+                                                <StackPanel Orientation="Horizontal" Margin="0,4">
                                                     <CheckBox IsChecked="{Binding IsCompleted, Mode=TwoWay}"
                                                              Style="{StaticResource ModernCheckBox}"
                                                              VerticalAlignment="Center"
                                                              Click="TaskCheckBox_Click"/>
                                                     <TextBlock Text="{Binding Content}"
                                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                                              FontFamily="Space Grotesk"
                                                               FontSize="11"
+                                                              FontWeight="Normal"
                                                               Margin="5,0"
                                                               VerticalAlignment="Center"
+                                                              TextWrapping="Wrap"
                                                               TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToStrikethroughConverter}}"/>
                                                     <Button Content="×"
                                                            Style="{StaticResource ModernDeleteButton}"
@@ -307,8 +343,11 @@
                                                    Tag="{Binding Content}">
                                                 <TextBlock Text="{Binding Preview}"
                                                           Foreground="{StaticResource PrimaryTextBrush}"
+                                                          FontFamily="Space Grotesk"
                                                           FontSize="11"
-                                                          TextWrapping="Wrap"/>
+                                                          FontWeight="Normal"
+                                                          TextWrapping="Wrap"
+                                                          LineHeight="16"/>
                                             </Border>
                                         </DataTemplate>
                                     </ItemsControl.ItemTemplate>
@@ -323,83 +362,110 @@
                             </ScrollViewer.RenderTransform>
                             <StackPanel>
                                 <TextBlock Text="AI Settings" 
-                                          Foreground="{StaticResource PrimaryTextBrush}" 
-                                          FontSize="13" 
-                                          FontWeight="SemiBold" 
-                                          Margin="0,0,0,8"/>
+                                          Foreground="{StaticResource PrimaryTextBrush}"
+                                          FontFamily="Space Grotesk"
+                                          FontSize="13"
+                                          FontWeight="SemiBold"
+                                          Margin="0,0,0,12"/>
                                 <TextBlock Text="Model:" 
-                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          Foreground="{StaticResource TertiaryTextBrush}"
+                                          FontFamily="Space Grotesk"
                                           FontSize="10"
-                                          Margin="0,0,0,4"/>
+                                          FontWeight="Medium"
+                                          Margin="0,0,0,6"/>
                                 <TextBox Text="{Binding Settings.OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
-                                        BorderThickness="1"
-                                        Padding="12,10"
-                                        FontSize="12"
+                                        BorderThickness="1.5"
+                                        Padding="14,12"
+                                        FontSize="13"
+                                        FontFamily="Space Grotesk"
                                         CaretBrush="#2D9CDB"
                                         SelectionBrush="#2D9CDB"
                                         VerticalContentAlignment="Center"
-                                        Margin="0,0,0,10">
+                                        Margin="0,0,0,12">
                                     <TextBox.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="10"/>
                                         </Style>
                                     </TextBox.Resources>
                                 </TextBox>
                                 <TextBlock Text="API Key:" 
-                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          Foreground="{StaticResource TertiaryTextBrush}"
+                                          FontFamily="Space Grotesk"
                                           FontSize="10"
-                                          Margin="0,0,0,4"/>
+                                          FontWeight="Medium"
+                                          Margin="0,0,0,6"/>
                                 <TextBox Text="{Binding Settings.OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
-                                        BorderThickness="1"
-                                        Padding="12,10"
-                                        FontSize="12"
+                                        BorderThickness="1.5"
+                                        Padding="14,12"
+                                        FontSize="13"
+                                        FontFamily="Space Grotesk"
                                         CaretBrush="#2D9CDB"
                                         SelectionBrush="#2D9CDB"
                                         VerticalContentAlignment="Center"
-                                        Margin="0,0,0,15">
+                                        Margin="0,0,0,18">
                                     <TextBox.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="10"/>
                                         </Style>
                                     </TextBox.Resources>
                                 </TextBox>
                                 
                                 <TextBlock Text="Weather Settings" 
-                                          Foreground="{StaticResource PrimaryTextBrush}" 
-                                          FontSize="13" 
-                                          FontWeight="SemiBold" 
-                                          Margin="0,0,0,8"/>
+                                          Foreground="{StaticResource PrimaryTextBrush}"
+                                          FontFamily="Space Grotesk"
+                                          FontSize="13"
+                                          FontWeight="SemiBold"
+                                          Margin="0,0,0,12"/>
                                 <TextBlock Text="City:" 
-                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          Foreground="{StaticResource TertiaryTextBrush}"
+                                          FontFamily="Space Grotesk"
                                           FontSize="10"
-                                          Margin="0,0,0,4"/>
+                                          FontWeight="Medium"
+                                          Margin="0,0,0,6"/>
                                 <TextBox Text="{Binding Settings.City, UpdateSourceTrigger=PropertyChanged}"
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
-                                        BorderThickness="1"
-                                        Padding="12,10"
-                                        FontSize="12"
+                                        BorderThickness="1.5"
+                                        Padding="14,12"
+                                        FontSize="13"
+                                        FontFamily="Space Grotesk"
                                         CaretBrush="#2D9CDB"
                                         SelectionBrush="#2D9CDB"
                                         VerticalContentAlignment="Center"
-                                        Margin="0,0,0,15">
+                                        Margin="0,0,0,18">
                                     <TextBox.Resources>
                                         <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="8"/>
+                                            <Setter Property="CornerRadius" Value="10"/>
                                         </Style>
                                     </TextBox.Resources>
                                 </TextBox>
                                 
                                 <Button Content="Save Settings"
-                                       Style="{StaticResource ModernButton}"
-                                       Click="SaveSettings_Click"/>
+                                       Background="#2D9CDB"
+                                       Foreground="#FFFFFF"
+                                       BorderThickness="0"
+                                       Padding="20,12"
+                                       FontSize="13"
+                                       FontFamily="Space Grotesk"
+                                       FontWeight="Medium"
+                                       Cursor="Hand"
+                                       Click="SaveSettings_Click">
+                                    <Button.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="10"/>
+                                        </Style>
+                                    </Button.Resources>
+                                    <Button.Effect>
+                                        <DropShadowEffect Color="#2D9CDB" BlurRadius="16" ShadowDepth="0" Opacity="0.35"/>
+                                    </Button.Effect>
+                                </Button>
                             </StackPanel>
                         </ScrollViewer>
                         

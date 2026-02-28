@@ -1,0 +1,30 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- 
+    Space Grotesk Font Family
+    Download from: https://fonts.google.com/specimen/Space+Grotesk
+    Install the font on your system or include it in the project
+    -->
+    
+    <!-- Font Families -->
+    <FontFamily x:Key="PrimaryFont">Space Grotesk</FontFamily>
+    <FontFamily x:Key="MonospaceFont">Consolas, Courier New</FontFamily>
+    
+    <!-- Font Sizes - Modern Scale -->
+    <System:Double x:Key="FontSizeXXL" xmlns:System="clr-namespace:System;assembly=mscorlib">48</System:Double>
+    <System:Double x:Key="FontSizeXL" xmlns:System="clr-namespace:System;assembly=mscorlib">36</System:Double>
+    <System:Double x:Key="FontSizeLarge" xmlns:System="clr-namespace:System;assembly=mscorlib">20</System:Double>
+    <System:Double x:Key="FontSizeMedium" xmlns:System="clr-namespace:System;assembly=mscorlib">16</System:Double>
+    <System:Double x:Key="FontSizeNormal" xmlns:System="clr-namespace:System;assembly=mscorlib">13</System:Double>
+    <System:Double x:Key="FontSizeSmall" xmlns:System="clr-namespace:System;assembly=mscorlib">11</System:Double>
+    <System:Double x:Key="FontSizeTiny" xmlns:System="clr-namespace:System;assembly=mscorlib">10</System:Double>
+    
+    <!-- Font Weights -->
+    <FontWeight x:Key="FontWeightLight">Light</FontWeight>
+    <FontWeight x:Key="FontWeightNormal">Normal</FontWeight>
+    <FontWeight x:Key="FontWeightMedium">Medium</FontWeight>
+    <FontWeight x:Key="FontWeightSemiBold">SemiBold</FontWeight>
+    <FontWeight x:Key="FontWeightBold">Bold</FontWeight>
+    
+</ResourceDictionary>
