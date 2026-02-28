@@ -20,57 +20,35 @@
     
     <Window.Resources>
         <converters:PageIndexToBrushConverter x:Key="PageIndexToBrushConverter"/>
-        <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethroughConverter"/>
-        <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
-        <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
-        
-        <!-- Storyboards for expand/collapse animations -->
-        <Storyboard x:Key="ExpandAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="Width"
-                           To="400"
-                           Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetProperty="Height"
-                           To="200"
-                           Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
-        
-        <Storyboard x:Key="CollapseAnimation">
-            <DoubleAnimation Storyboard.TargetProperty="Width"
-                           To="150"
-                           Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-            <DoubleAnimation Storyboard.TargetProperty="Height"
-                           To="40"
-                           Duration="0:0:0.3">
-                <DoubleAnimation.EasingFunction>
-                    <CubicEase EasingMode="EaseOut"/>
-                </DoubleAnimation.EasingFunction>
-            </DoubleAnimation>
-        </Storyboard>
     </Window.Resources>
     
     <Grid>
         <Border x:Name="MainBorder"
-                Background="#1E1E1E"
-                CornerRadius="20"
-                BorderBrush="#333333"
+                CornerRadius="22"
                 BorderThickness="1">
+            <!-- Glassmorphism Background -->
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Color="#E61A1A1A" Offset="0"/>
+                    <GradientStop Color="#E6202020" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            
+            <!-- Subtle border glow -->
+            <Border.BorderBrush>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                    <GradientStop Color="#55FFFFFF" Offset="0"/>
+                    <GradientStop Color="#22FFFFFF" Offset="0.5"/>
+                    <GradientStop Color="#552D9CDB" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.BorderBrush>
+            
+            <!-- Enhanced drop shadow -->
             <Border.Effect>
-                <DropShadowEffect Color="Black" 
-                                BlurRadius="20" 
+                <DropShadowEffect Color="#000000" 
+                                BlurRadius="30" 
                                 ShadowDepth="0" 
-                                Opacity="0.5"/>
+                                Opacity="0.6"/>
             </Border.Effect>
             
             <Grid x:Name="ContentGrid" ClipToBounds="True">
@@ -81,16 +59,16 @@
                            VerticalAlignment="Center"
                            Margin="10,0">
                     <TextBlock Text="{Binding SystemInfo.FormattedTime}"
-                              Foreground="White"
+                              Foreground="{StaticResource PrimaryTextBrush}"
                               FontSize="12"
                               FontWeight="SemiBold"
-                              Margin="0,0,8,0"/>
+                              Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°}"
-                              Foreground="#AAAAAA"
+                              Foreground="{StaticResource SecondaryTextBrush}"
                               FontSize="12"
-                              Margin="0,0,8,0"/>
+                              Margin="0,0,10,0"/>
                     <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
-                              Foreground="#AAAAAA"
+                              Foreground="{StaticResource SecondaryTextBrush}"
                               FontSize="12"/>
                 </StackPanel>
                 
@@ -102,35 +80,39 @@
                         <!-- Page 1: System Overview -->
                         <StackPanel x:Name="Page1" Visibility="Visible">
                             <TextBlock Text="{Binding SystemInfo.FormattedTime}"
-                                      Foreground="White"
-                                      FontSize="32"
-                                      FontWeight="Bold"
+                                      Foreground="{StaticResource PrimaryTextBrush}"
+                                      FontSize="36"
+                                      FontWeight="Light"
                                       HorizontalAlignment="Center"/>
                             <TextBlock Text="{Binding SystemInfo.FormattedDate}"
-                                      Foreground="#AAAAAA"
-                                      FontSize="14"
+                                      Foreground="{StaticResource SecondaryTextBrush}"
+                                      FontSize="13"
                                       HorizontalAlignment="Center"
-                                      Margin="0,5,0,15"/>
+                                      Margin="0,4,0,20"/>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                <StackPanel Margin="10,0">
+                                <StackPanel Margin="15,0">
                                     <TextBlock Text="Weather"
-                                              Foreground="#888888"
+                                              Foreground="{StaticResource TertiaryTextBrush}"
                                               FontSize="10"
-                                              HorizontalAlignment="Center"/>
+                                              FontWeight="Medium"
+                                              HorizontalAlignment="Center"
+                                              Margin="0,0,0,4"/>
                                     <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°C}"
-                                              Foreground="White"
-                                              FontSize="18"
+                                              Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontSize="20"
                                               FontWeight="SemiBold"
                                               HorizontalAlignment="Center"/>
                                 </StackPanel>
-                                <StackPanel Margin="10,0">
+                                <StackPanel Margin="15,0">
                                     <TextBlock Text="Battery"
-                                              Foreground="#888888"
+                                              Foreground="{StaticResource TertiaryTextBrush}"
                                               FontSize="10"
-                                              HorizontalAlignment="Center"/>
+                                              FontWeight="Medium"
+                                              HorizontalAlignment="Center"
+                                              Margin="0,0,0,4"/>
                                     <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
-                                              Foreground="White"
-                                              FontSize="18"
+                                              Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontSize="20"
                                               FontWeight="SemiBold"
                                               HorizontalAlignment="Center"/>
                                 </StackPanel>
@@ -140,39 +122,61 @@
                         <!-- Page 2: Media Context -->
                         <StackPanel x:Name="Page2" Visibility="Collapsed">
                             <TextBlock Text="No Media Playing"
-                                      Foreground="#888888"
-                                      FontSize="14"
+                                      Foreground="{StaticResource TertiaryTextBrush}"
+                                      FontSize="13"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center"
                                       Margin="0,70,0,0"
                                       Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
                             
-                            <StackPanel Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <StackPanel Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Margin="0,10,0,0">
                                 <TextBlock Text="{Binding MediaInfo.Title}"
-                                          Foreground="White"
+                                          Foreground="{StaticResource PrimaryTextBrush}"
                                           FontSize="16"
                                           FontWeight="SemiBold"
                                           TextTrimming="CharacterEllipsis"
-                                          HorizontalAlignment="Center"/>
+                                          HorizontalAlignment="Center"
+                                          Margin="0,0,0,4"/>
                                 <TextBlock Text="{Binding MediaInfo.Artist}"
-                                          Foreground="#AAAAAA"
+                                          Foreground="{StaticResource SecondaryTextBrush}"
                                           FontSize="12"
                                           TextTrimming="CharacterEllipsis"
                                           HorizontalAlignment="Center"
-                                          Margin="0,2"/>
-                                <ProgressBar Value="{Binding MediaInfo.ProgressPercentage, Mode=OneWay}"
-                                           Height="4"
-                                           Margin="0,10"
-                                           Foreground="#555555"/>
-                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                          Margin="0,0,0,15"/>
+                                
+                                <!-- Modern Progress Bar -->
+                                <Border Background="{StaticResource SecondaryBackgroundBrush}"
+                                       Height="4"
+                                       CornerRadius="2"
+                                       Margin="20,0">
+                                    <Rectangle Fill="{StaticResource AccentBrush}"
+                                              HorizontalAlignment="Left"
+                                              RadiusX="2"
+                                              RadiusY="2">
+                                        <Rectangle.Width>
+                                            <MultiBinding>
+                                                <MultiBinding.Converter>
+                                                    <converters:PercentageWidthConverter/>
+                                                </MultiBinding.Converter>
+                                                <Binding Path="MediaInfo.ProgressPercentage"/>
+                                                <Binding RelativeSource="{RelativeSource AncestorType=Border}" Path="ActualWidth"/>
+                                            </MultiBinding>
+                                        </Rectangle.Width>
+                                    </Rectangle>
+                                </Border>
+                                
+                                <StackPanel Orientation="Horizontal" 
+                                          HorizontalAlignment="Center"
+                                          Margin="0,8,0,0">
                                     <TextBlock Text="{Binding MediaInfo.FormattedPosition}"
-                                              Foreground="#888888"
+                                              Foreground="{StaticResource TertiaryTextBrush}"
                                               FontSize="10"/>
                                     <TextBlock Text=" / "
-                                              Foreground="#888888"
+                                              Foreground="{StaticResource TertiaryTextBrush}"
                                               FontSize="10"/>
                                     <TextBlock Text="{Binding MediaInfo.FormattedDuration}"
-                                              Foreground="#888888"
+                                              Foreground="{StaticResource TertiaryTextBrush}"
                                               FontSize="10"/>
                                 </StackPanel>
                             </StackPanel>
@@ -182,19 +186,16 @@
                         <Grid x:Name="Page3" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBox x:Name="AIInputBox"
-                                        Background="#2A2A2A"
-                                        Foreground="White"
-                                        BorderBrush="#444444"
-                                        BorderThickness="1"
-                                        Padding="8"
-                                        FontSize="12"
+                                        Style="{StaticResource ModernTextBox}"
                                         TextWrapping="Wrap"
                                         Height="40"
                                         Margin="0,0,0,10"
+                                        Foreground="White"
+                                        CaretBrush="#2D9CDB"
                                         KeyDown="AIInputBox_KeyDown"/>
                                 <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
                                     <TextBlock Text="{Binding AIResponse}"
-                                              Foreground="#CCCCCC"
+                                              Foreground="{StaticResource SecondaryTextBrush}"
                                               FontSize="11"
                                               TextWrapping="Wrap"
                                               Padding="5"/>
@@ -206,12 +207,7 @@
                         <Grid x:Name="Page4" Visibility="Collapsed">
                             <StackPanel>
                                 <TextBox x:Name="TaskInputBox"
-                                        Background="#2A2A2A"
-                                        Foreground="White"
-                                        BorderBrush="#444444"
-                                        BorderThickness="1"
-                                        Padding="8"
-                                        FontSize="12"
+                                        Style="{StaticResource ModernTextBox}"
                                         Margin="0,0,0,10"
                                         KeyDown="TaskInputBox_KeyDown"/>
                                 <ScrollViewer Height="140" VerticalScrollBarVisibility="Auto">
@@ -220,21 +216,17 @@
                                             <DataTemplate>
                                                 <StackPanel Orientation="Horizontal" Margin="0,3">
                                                     <CheckBox IsChecked="{Binding IsCompleted, Mode=TwoWay}"
-                                                             Foreground="White"
+                                                             Style="{StaticResource ModernCheckBox}"
                                                              VerticalAlignment="Center"
                                                              Click="TaskCheckBox_Click"/>
                                                     <TextBlock Text="{Binding Content}"
-                                                              Foreground="White"
+                                                              Foreground="{StaticResource PrimaryTextBrush}"
                                                               FontSize="11"
                                                               Margin="5,0"
                                                               VerticalAlignment="Center"
                                                               TextDecorations="{Binding IsCompleted, Converter={StaticResource BoolToStrikethroughConverter}}"/>
                                                     <Button Content="×"
-                                                           Background="Transparent"
-                                                           Foreground="#888888"
-                                                           BorderThickness="0"
-                                                           FontSize="16"
-                                                           Padding="5,0"
+                                                           Style="{StaticResource ModernDeleteButton}"
                                                            Click="RemoveTask_Click"
                                                            Tag="{Binding Id}"/>
                                                 </StackPanel>
@@ -251,15 +243,11 @@
                                 <ItemsControl ItemsSource="{Binding ClipboardItems}">
                                     <ItemsControl.ItemTemplate>
                                         <DataTemplate>
-                                            <Border Background="#2A2A2A"
-                                                   Margin="0,5"
-                                                   Padding="10"
-                                                   CornerRadius="5"
-                                                   Cursor="Hand"
+                                            <Border Style="{StaticResource ModernClipboardItem}"
                                                    MouseDown="ClipboardItem_MouseDown"
                                                    Tag="{Binding Content}">
                                                 <TextBlock Text="{Binding Preview}"
-                                                          Foreground="White"
+                                                          Foreground="{StaticResource PrimaryTextBrush}"
                                                           FontSize="11"
                                                           TextWrapping="Wrap"/>
                                             </Border>
@@ -272,29 +260,42 @@
                         <!-- Page 6: Settings -->
                         <ScrollViewer x:Name="Page6" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="AI Settings" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,0,0,5"/>
-                                <TextBlock Text="Model:" Foreground="#888888" FontSize="10"/>
+                                <TextBlock Text="AI Settings" 
+                                          Foreground="{StaticResource PrimaryTextBrush}" 
+                                          FontSize="13" 
+                                          FontWeight="SemiBold" 
+                                          Margin="0,0,0,8"/>
+                                <TextBlock Text="Model:" 
+                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          FontSize="10"
+                                          Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
-                                        Background="#2A2A2A" Foreground="White" BorderBrush="#444444"
-                                        Padding="5" FontSize="10" Margin="0,2,0,5"/>
-                                <TextBlock Text="API Key:" Foreground="#888888" FontSize="10"/>
+                                        Style="{StaticResource ModernTextBox}"
+                                        Margin="0,0,0,10"/>
+                                <TextBlock Text="API Key:" 
+                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          FontSize="10"
+                                          Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                        Background="#2A2A2A" Foreground="White" BorderBrush="#444444"
-                                        Padding="5" FontSize="10" Margin="0,2,0,10"/>
+                                        Style="{StaticResource ModernTextBox}"
+                                        Margin="0,0,0,15"/>
                                 
-                                <TextBlock Text="Weather Settings" Foreground="White" FontSize="12" FontWeight="Bold" Margin="0,5,0,5"/>
-                                <TextBlock Text="City:" Foreground="#888888" FontSize="10"/>
+                                <TextBlock Text="Weather Settings" 
+                                          Foreground="{StaticResource PrimaryTextBrush}" 
+                                          FontSize="13" 
+                                          FontWeight="SemiBold" 
+                                          Margin="0,0,0,8"/>
+                                <TextBlock Text="City:" 
+                                          Foreground="{StaticResource TertiaryTextBrush}" 
+                                          FontSize="10"
+                                          Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.City, UpdateSourceTrigger=PropertyChanged}"
-                                        Background="#2A2A2A" Foreground="White" BorderBrush="#444444"
-                                        Padding="5" FontSize="10" Margin="0,2,0,10"/>
+                                        Style="{StaticResource ModernTextBox}"
+                                        Margin="0,0,0,15"/>
                                 
                                 <Button Content="Save Settings"
-                                       Background="#0078D4"
-                                       Foreground="White"
-                                       BorderThickness="0"
-                                       Padding="10,5"
-                                       Click="SaveSettings_Click"
-                                       Margin="0,10,0,0"/>
+                                       Style="{StaticResource ModernButton}"
+                                       Click="SaveSettings_Click"/>
                             </StackPanel>
                         </ScrollViewer>
                         
@@ -307,22 +308,107 @@
                                Margin="0,0,0,10">
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=0}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="0"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="0"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect x:Name="Dot0Glow" 
+                                                Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=1}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="1"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="1"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=2}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="2"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="2"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=3}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="3"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="3"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=4}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="4"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="4"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                         <Ellipse Width="8" Height="8" Margin="4" Cursor="Hand"
                                 Fill="{Binding CurrentPageIndex, Converter={StaticResource PageIndexToBrushConverter}, ConverterParameter=5}"
-                                MouseLeftButtonDown="PageDot_Click" Tag="5"/>
+                                MouseLeftButtonDown="PageDot_Click" 
+                                MouseEnter="PageDot_MouseEnter"
+                                MouseLeave="PageDot_MouseLeave"
+                                Tag="5"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Ellipse.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Ellipse.RenderTransform>
+                            <Ellipse.Effect>
+                                <DropShadowEffect Color="#2D9CDB" 
+                                                BlurRadius="8" 
+                                                ShadowDepth="0" 
+                                                Opacity="0"/>
+                            </Ellipse.Effect>
+                        </Ellipse>
                     </StackPanel>
                 </Grid>
             </Grid>

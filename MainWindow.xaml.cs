@@ -95,16 +95,17 @@ public partial class MainWindow : Window
         _isExpanded = true;
         _viewModel.IsExpanded = true;
         
+        // Switch content first
         CollapsedContent.Visibility = Visibility.Collapsed;
         ExpandedContent.Visibility = Visibility.Visible;
         
-        // Animate window and reposition
-        var screenWidth = SystemParameters.PrimaryScreenWidth;
-        var targetLeft = (screenWidth - 400) / 2;
-        Left = targetLeft;
+        // Set size directly
+        Width = 400;
+        Height = 200;
         
-        var expandAnim = (Storyboard)Resources["ExpandAnimation"];
-        expandAnim.Begin(this);
+        // Center window
+        var screenWidth = SystemParameters.PrimaryScreenWidth;
+        Left = (screenWidth - 400) / 2;
     }
 
     private void CollapseIsland()
@@ -115,18 +116,17 @@ public partial class MainWindow : Window
         _viewModel.IsExpanded = false;
         _idleTimer.Stop();
         
-        // Reposition to stay centered
-        var screenWidth = SystemParameters.PrimaryScreenWidth;
-        var targetLeft = (screenWidth - 150) / 2;
-        Left = targetLeft;
+        // Switch content first
+        ExpandedContent.Visibility = Visibility.Collapsed;
+        CollapsedContent.Visibility = Visibility.Visible;
         
-        var collapseAnim = (Storyboard)Resources["CollapseAnimation"];
-        collapseAnim.Completed += (s, e) =>
-        {
-            CollapsedContent.Visibility = Visibility.Visible;
-            ExpandedContent.Visibility = Visibility.Collapsed;
-        };
-        collapseAnim.Begin(this);
+        // Set size directly
+        Width = 150;
+        Height = 40;
+        
+        // Center window
+        var screenWidth = SystemParameters.PrimaryScreenWidth;
+        Left = (screenWidth - 150) / 2;
     }
 
     private void ResetIdleTimer()
@@ -178,10 +178,22 @@ public partial class MainWindow : Window
     {
         if (pageIndex < 0 || pageIndex > 5) return;
         
-        _pages[_currentPage].Visibility = Visibility.Collapsed;
-        _currentPage = pageIndex;
-        _pages[_currentPage].Visibility = Visibility.Visible;
-        _viewModel.CurrentPageIndex = pageIndex;
+        // Fade out current page with slide animation
+        var fadeOutAnim = (Storyboard)App.Current.Resources["PageFadeOut"];
+        var fadeOutClone = fadeOutAnim.Clone();
+        fadeOutClone.Completed += (s, e) =>
+        {
+            _pages[_currentPage].Visibility = Visibility.Collapsed;
+            _currentPage = pageIndex;
+            _pages[_currentPage].Visibility = Visibility.Visible;
+            _viewModel.CurrentPageIndex = pageIndex;
+            
+            // Fade in new page with slide animation
+            var fadeInAnim = (Storyboard)App.Current.Resources["PageFadeIn"];
+            var fadeInClone = fadeInAnim.Clone();
+            fadeInClone.Begin(_pages[_currentPage] as System.Windows.FrameworkElement);
+        };
+        fadeOutClone.Begin(_pages[_currentPage] as System.Windows.FrameworkElement);
         
         ResetIdleTimer();
     }
@@ -191,6 +203,48 @@ public partial class MainWindow : Window
         if (sender is System.Windows.Shapes.Ellipse ellipse && ellipse.Tag is string tagStr && int.TryParse(tagStr, out int pageIndex))
         {
             NavigateToPage(pageIndex);
+        }
+    }
+
+    private void PageDot_MouseEnter(object sender, WpfInput.MouseEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Ellipse ellipse)
+        {
+            var hoverInAnim = (Storyboard)App.Current.Resources["DotHoverIn"];
+            var clone = hoverInAnim.Clone();
+            clone.Begin(ellipse);
+            
+            // Enhance glow effect
+            if (ellipse.Effect is System.Windows.Media.Effects.DropShadowEffect shadow)
+            {
+                var glowAnim = new DoubleAnimation
+                {
+                    To = 0.6,
+                    Duration = TimeSpan.FromSeconds(0.2)
+                };
+                shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, glowAnim);
+            }
+        }
+    }
+
+    private void PageDot_MouseLeave(object sender, WpfInput.MouseEventArgs e)
+    {
+        if (sender is System.Windows.Shapes.Ellipse ellipse)
+        {
+            var hoverOutAnim = (Storyboard)App.Current.Resources["DotHoverOut"];
+            var clone = hoverOutAnim.Clone();
+            clone.Begin(ellipse);
+            
+            // Reduce glow effect
+            if (ellipse.Effect is System.Windows.Media.Effects.DropShadowEffect shadow)
+            {
+                var glowAnim = new DoubleAnimation
+                {
+                    To = 0,
+                    Duration = TimeSpan.FromSeconds(0.2)
+                };
+                shadow.BeginAnimation(System.Windows.Media.Effects.DropShadowEffect.OpacityProperty, glowAnim);
+            }
         }
     }
 

@@ -1,0 +1,178 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- Ultra Smooth Expand Animation -->
+    <Storyboard x:Key="ExpandAnimation">
+        <!-- Width Animation -->
+        <DoubleAnimation Storyboard.TargetProperty="Width"
+                       To="400"
+                       Duration="0:0:0.4">
+            <DoubleAnimation.EasingFunction>
+                <QuadraticEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        
+        <!-- Height Animation -->
+        <DoubleAnimation Storyboard.TargetProperty="Height"
+                       To="200"
+                       Duration="0:0:0.4">
+            <DoubleAnimation.EasingFunction>
+                <QuadraticEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <!-- Ultra Smooth Collapse Animation -->
+    <Storyboard x:Key="CollapseAnimation">
+        <!-- Width Animation -->
+        <DoubleAnimation Storyboard.TargetProperty="Width"
+                       To="150"
+                       Duration="0:0:0.4">
+            <DoubleAnimation.EasingFunction>
+                <QuadraticEase EasingMode="EaseInOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        
+        <!-- Height Animation -->
+        <DoubleAnimation Storyboard.TargetProperty="Height"
+                       To="40"
+                       Duration="0:0:0.4">
+            <DoubleAnimation.EasingFunction>
+                <QuadraticEase EasingMode="EaseInOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <!-- Page Fade In Animation -->
+    <Storyboard x:Key="PageFadeIn">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                       From="0"
+                       To="1"
+                       Duration="0:0:0.4">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        
+        <ThicknessAnimation Storyboard.TargetProperty="Margin"
+                          From="20,0,0,0"
+                          To="0,0,0,0"
+                          Duration="0:0:0.4">
+            <ThicknessAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </ThicknessAnimation.EasingFunction>
+        </ThicknessAnimation>
+    </Storyboard>
+    
+    <!-- Page Fade Out Animation -->
+    <Storyboard x:Key="PageFadeOut">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                       From="1"
+                       To="0"
+                       Duration="0:0:0.3">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseIn"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        
+        <ThicknessAnimation Storyboard.TargetProperty="Margin"
+                          From="0,0,0,0"
+                          To="-20,0,0,0"
+                          Duration="0:0:0.3">
+            <ThicknessAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseIn"/>
+            </ThicknessAnimation.EasingFunction>
+        </ThicknessAnimation>
+    </Storyboard>
+    
+    <!-- Navigation Dot Pulse Animation -->
+    <Storyboard x:Key="DotPulseAnimation" RepeatBehavior="Forever" AutoReverse="True">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                       From="1.0"
+                       To="1.15"
+                       Duration="0:0:0.8">
+            <DoubleAnimation.EasingFunction>
+                <SineEase EasingMode="EaseInOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                       From="1.0"
+                       To="1.15"
+                       Duration="0:0:0.8">
+            <DoubleAnimation.EasingFunction>
+                <SineEase EasingMode="EaseInOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <!-- Button Hover Scale Animation -->
+    <Storyboard x:Key="ButtonHoverIn">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                       To="1.05"
+                       Duration="0:0:0.15">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                       To="1.05"
+                       Duration="0:0:0.15">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <Storyboard x:Key="ButtonHoverOut">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                       To="1.0"
+                       Duration="0:0:0.15">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                       To="1.0"
+                       Duration="0:0:0.15">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <!-- Dot Hover Animation -->
+    <Storyboard x:Key="DotHoverIn">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                       To="1.3"
+                       Duration="0:0:0.2">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                       To="1.3"
+                       Duration="0:0:0.2">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+    <Storyboard x:Key="DotHoverOut">
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                       To="1.0"
+                       Duration="0:0:0.2">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="0.2"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+        <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                       To="1.0"
+                       Duration="0:0:0.2">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="0.2"/>
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+    
+</ResourceDictionary>

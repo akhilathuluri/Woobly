@@ -56,12 +56,29 @@ namespace Woobly.Converters
         {
             if (value is int currentPage && parameter is string pageIndexStr && int.TryParse(pageIndexStr, out int targetPage))
             {
-                return currentPage == targetPage ? "#FFFFFF" : "#444444";
+                return currentPage == targetPage ? "#2D9CDB" : "#555555";
             }
-            return "#444444";
+            return "#555555";
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class PercentageWidthConverter : IMultiValueConverter
+    {
+        public object Convert(object[] values, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (values.Length == 2 && values[0] is double percentage && values[1] is double totalWidth)
+            {
+                return (percentage / 100.0) * totalWidth;
+            }
+            return 0.0;
+        }
+
+        public object[] ConvertBack(object value, Type[] targetTypes, object parameter, CultureInfo culture)
         {
             throw new NotImplementedException();
         }
