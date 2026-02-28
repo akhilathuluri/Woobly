@@ -13,17 +13,29 @@
         Topmost="True"
         ShowInTaskbar="False"
         ResizeMode="NoResize"
-        Width="150"
-        Height="40"
+        Width="400"
+        Height="200"
         MouseDown="Window_MouseDown"
-        Loaded="Window_Loaded">
+        Loaded="Window_Loaded"
+        UseLayoutRounding="True"
+        RenderOptions.BitmapScalingMode="HighQuality"
+        RenderOptions.EdgeMode="Aliased">
     
     <Window.Resources>
         <converters:PageIndexToBrushConverter x:Key="PageIndexToBrushConverter"/>
     </Window.Resources>
     
-    <Grid>
+    <Grid x:Name="RootGrid" RenderTransformOrigin="0.5,0">
+        <Grid.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="IslandScaleTransform" ScaleX="0.375" ScaleY="0.2"/>
+                <TranslateTransform x:Name="IslandTranslateTransform" Y="0"/>
+            </TransformGroup>
+        </Grid.RenderTransform>
+        
         <Border x:Name="MainBorder"
+                Width="400"
+                Height="200"
                 CornerRadius="22"
                 BorderThickness="1"
                 ClipToBounds="True">
@@ -52,13 +64,18 @@
                                 Opacity="0.6"/>
             </Border.Effect>
             
-            <Grid x:Name="ContentGrid" ClipToBounds="True">
+            <Grid x:Name="ContentGrid" Width="400" Height="200" ClipToBounds="True">
                 <!-- Collapsed State Content -->
                 <StackPanel x:Name="CollapsedContent" 
                            Orientation="Horizontal"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
-                           Margin="10,0">
+                           Margin="10,0"
+                           Opacity="1"
+                           RenderTransformOrigin="0.5,0.5">
+                    <StackPanel.RenderTransform>
+                        <ScaleTransform x:Name="CollapsedContentScale" ScaleX="2.667" ScaleY="5.0"/>
+                    </StackPanel.RenderTransform>
                     <TextBlock Text="{Binding SystemInfo.FormattedTime}"
                               Foreground="{StaticResource PrimaryTextBrush}"
                               FontSize="12"
@@ -74,12 +91,15 @@
                 </StackPanel>
                 
                 <!-- Expanded State Content -->
-                <Grid x:Name="ExpandedContent" Visibility="Collapsed">
+                <Grid x:Name="ExpandedContent" Visibility="Collapsed" Opacity="0">
                     <!-- Page Container -->
                     <Grid x:Name="PageContainer" Margin="15">
                         
                         <!-- Page 1: System Overview -->
-                        <StackPanel x:Name="Page1" Visibility="Visible">
+                        <StackPanel x:Name="Page1" Visibility="Visible" RenderTransformOrigin="0.5,0.5">
+                            <StackPanel.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </StackPanel.RenderTransform>
                             <TextBlock Text="{Binding SystemInfo.FormattedTime}"
                                       Foreground="{StaticResource PrimaryTextBrush}"
                                       FontSize="36"
@@ -121,7 +141,10 @@
                         </StackPanel>
                         
                         <!-- Page 2: Media Context -->
-                        <StackPanel x:Name="Page2" Visibility="Collapsed">
+                        <StackPanel x:Name="Page2" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                            <StackPanel.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </StackPanel.RenderTransform>
                             <TextBlock Text="No Media Playing"
                                       Foreground="{StaticResource TertiaryTextBrush}"
                                       FontSize="13"
@@ -184,16 +207,31 @@
                         </StackPanel>
                         
                         <!-- Page 3: AI Response -->
-                        <Grid x:Name="Page3" Visibility="Collapsed">
+                        <Grid x:Name="Page3" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
                             <StackPanel>
                                 <TextBox x:Name="AIInputBox"
-                                        Style="{StaticResource ModernTextBox}"
+                                        Background="#242424"
+                                        Foreground="#FFFFFF"
+                                        BorderBrush="#3A3A3A"
+                                        BorderThickness="1"
+                                        Padding="12,10"
+                                        FontSize="12"
+                                        CaretBrush="#2D9CDB"
+                                        SelectionBrush="#2D9CDB"
                                         TextWrapping="Wrap"
                                         Height="40"
                                         Margin="0,0,0,10"
-                                        Foreground="White"
-                                        CaretBrush="#2D9CDB"
-                                        KeyDown="AIInputBox_KeyDown"/>
+                                        VerticalContentAlignment="Center"
+                                        KeyDown="AIInputBox_KeyDown">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
                                 <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
                                     <TextBlock Text="{Binding AIResponse}"
                                               Foreground="{StaticResource SecondaryTextBrush}"
@@ -205,12 +243,29 @@
                         </Grid>
                         
                         <!-- Page 4: Task Memory -->
-                        <Grid x:Name="Page4" Visibility="Collapsed">
+                        <Grid x:Name="Page4" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
                             <StackPanel>
                                 <TextBox x:Name="TaskInputBox"
-                                        Style="{StaticResource ModernTextBox}"
+                                        Background="#242424"
+                                        Foreground="#FFFFFF"
+                                        BorderBrush="#3A3A3A"
+                                        BorderThickness="1"
+                                        Padding="12,10"
+                                        FontSize="12"
+                                        CaretBrush="#2D9CDB"
+                                        SelectionBrush="#2D9CDB"
+                                        VerticalContentAlignment="Center"
                                         Margin="0,0,0,10"
-                                        KeyDown="TaskInputBox_KeyDown"/>
+                                        KeyDown="TaskInputBox_KeyDown">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
                                 <ScrollViewer Height="140" VerticalScrollBarVisibility="Auto">
                                     <ItemsControl ItemsSource="{Binding Tasks}">
                                         <ItemsControl.ItemTemplate>
@@ -239,7 +294,10 @@
                         </Grid>
                         
                         <!-- Page 5: Clipboard Memory -->
-                        <Grid x:Name="Page5" Visibility="Collapsed">
+                        <Grid x:Name="Page5" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
+                            <Grid.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </Grid.RenderTransform>
                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                 <ItemsControl ItemsSource="{Binding ClipboardItems}">
                                     <ItemsControl.ItemTemplate>
@@ -259,7 +317,10 @@
                         </Grid>
                         
                         <!-- Page 6: Settings -->
-                        <ScrollViewer x:Name="Page6" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <ScrollViewer x:Name="Page6" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" RenderTransformOrigin="0.5,0.5">
+                            <ScrollViewer.RenderTransform>
+                                <ScaleTransform ScaleX="1" ScaleY="1"/>
+                            </ScrollViewer.RenderTransform>
                             <StackPanel>
                                 <TextBlock Text="AI Settings" 
                                           Foreground="{StaticResource PrimaryTextBrush}" 
@@ -271,15 +332,43 @@
                                           FontSize="10"
                                           Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
-                                        Style="{StaticResource ModernTextBox}"
-                                        Margin="0,0,0,10"/>
+                                        Background="#242424"
+                                        Foreground="#FFFFFF"
+                                        BorderBrush="#3A3A3A"
+                                        BorderThickness="1"
+                                        Padding="12,10"
+                                        FontSize="12"
+                                        CaretBrush="#2D9CDB"
+                                        SelectionBrush="#2D9CDB"
+                                        VerticalContentAlignment="Center"
+                                        Margin="0,0,0,10">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
                                 <TextBlock Text="API Key:" 
                                           Foreground="{StaticResource TertiaryTextBrush}" 
                                           FontSize="10"
                                           Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
-                                        Style="{StaticResource ModernTextBox}"
-                                        Margin="0,0,0,15"/>
+                                        Background="#242424"
+                                        Foreground="#FFFFFF"
+                                        BorderBrush="#3A3A3A"
+                                        BorderThickness="1"
+                                        Padding="12,10"
+                                        FontSize="12"
+                                        CaretBrush="#2D9CDB"
+                                        SelectionBrush="#2D9CDB"
+                                        VerticalContentAlignment="Center"
+                                        Margin="0,0,0,15">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
                                 
                                 <TextBlock Text="Weather Settings" 
                                           Foreground="{StaticResource PrimaryTextBrush}" 
@@ -291,8 +380,22 @@
                                           FontSize="10"
                                           Margin="0,0,0,4"/>
                                 <TextBox Text="{Binding Settings.City, UpdateSourceTrigger=PropertyChanged}"
-                                        Style="{StaticResource ModernTextBox}"
-                                        Margin="0,0,0,15"/>
+                                        Background="#242424"
+                                        Foreground="#FFFFFF"
+                                        BorderBrush="#3A3A3A"
+                                        BorderThickness="1"
+                                        Padding="12,10"
+                                        FontSize="12"
+                                        CaretBrush="#2D9CDB"
+                                        SelectionBrush="#2D9CDB"
+                                        VerticalContentAlignment="Center"
+                                        Margin="0,0,0,15">
+                                    <TextBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </TextBox.Resources>
+                                </TextBox>
                                 
                                 <Button Content="Save Settings"
                                        Style="{StaticResource ModernButton}"

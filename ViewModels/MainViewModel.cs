@@ -114,7 +114,7 @@ namespace Woobly.ViewModels
             };
 
             // Initial weather update
-            UpdateWeather();
+            _ = UpdateWeather();
         }
 
         private async void UpdateTimer_Tick(object? sender, EventArgs e)
@@ -125,7 +125,7 @@ namespace Woobly.ViewModels
             // Update weather every 5 minutes
             if (DateTime.Now.Second == 0 && DateTime.Now.Minute % 5 == 0)
             {
-                _ = UpdateWeather();
+                await UpdateWeather();
             }
         }
 

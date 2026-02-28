@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using WpfControls = System.Windows.Controls;
 using WpfInput = System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Woobly.ViewModels;
@@ -69,6 +70,9 @@ public partial class MainWindow : Window
         // Ensure window stays on top
         var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
         SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        
+        // Start in collapsed state
+        CollapseIslandImmediate();
     }
 
     private void PositionWindow()
@@ -76,6 +80,20 @@ public partial class MainWindow : Window
         var screen = SystemParameters.PrimaryScreenWidth;
         Left = (screen - Width) / 2;
         Top = 20;
+    }
+    
+    private void CollapseIslandImmediate()
+    {
+        // Set initial collapsed state without animation
+        IslandScaleTransform.ScaleX = 0.375; // 150/400
+        IslandScaleTransform.ScaleY = 0.2;   // 40/200
+        CollapsedContentScale.ScaleX = 2.667; // Counter-scale: 1/0.375
+        CollapsedContentScale.ScaleY = 5.0;   // Counter-scale: 1/0.2
+        CollapsedContent.Opacity = 1;
+        CollapsedContent.Visibility = Visibility.Visible;
+        ExpandedContent.Opacity = 0;
+        ExpandedContent.Visibility = Visibility.Collapsed;
+        _isExpanded = false;
     }
 
     private void Window_MouseDown(object sender, WpfInput.MouseButtonEventArgs e)
@@ -95,53 +113,71 @@ public partial class MainWindow : Window
         _isExpanded = true;
         _viewModel.IsExpanded = true;
         
-        // Get the expand animation from resources
-        var expandAnim = (Storyboard)App.Current.Resources["ExpandAnimation"];
-        var expandClone = expandAnim.Clone();
-        
-        // Calculate center position for expanded state
-        var screenWidth = SystemParameters.PrimaryScreenWidth;
-        var targetLeft = (screenWidth - 400) / 2;
-        
-        // Animate window position smoothly
-        var leftAnim = new DoubleAnimation
+        // Smooth scale animation using GPU-accelerated transforms
+        var scaleXAnim = new DoubleAnimation
         {
-            To = targetLeft,
-            Duration = TimeSpan.FromSeconds(0.5),
+            From = IslandScaleTransform.ScaleX,
+            To = 1.0,
+            Duration = TimeSpan.FromSeconds(0.45),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         
-        // Start content fade transition
-        CollapsedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+        var scaleYAnim = new DoubleAnimation
+        {
+            From = IslandScaleTransform.ScaleY,
+            To = 1.0,
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        
+        // Counter-scale the collapsed content so text stays same size
+        var contentScaleXAnim = new DoubleAnimation
+        {
+            From = CollapsedContentScale.ScaleX,
+            To = 1.0,
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        
+        var contentScaleYAnim = new DoubleAnimation
+        {
+            From = CollapsedContentScale.ScaleY,
+            To = 1.0,
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        
+        // Fade out collapsed content
+        var fadeOutAnim = new DoubleAnimation
         {
             From = 1,
             To = 0,
-            Duration = TimeSpan.FromSeconds(0.2),
+            Duration = TimeSpan.FromSeconds(0.15),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        });
+        };
         
-        // After a short delay, switch content and fade in
-        var switchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.15) };
-        switchTimer.Tick += (s, e) =>
+        fadeOutAnim.Completed += (s, e) =>
         {
-            switchTimer.Stop();
             CollapsedContent.Visibility = Visibility.Collapsed;
             ExpandedContent.Visibility = Visibility.Visible;
-            ExpandedContent.Opacity = 0;
             
-            ExpandedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+            // Fade in expanded content
+            var fadeInAnim = new DoubleAnimation
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromSeconds(0.35),
+                Duration = TimeSpan.FromSeconds(0.3),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            });
+            };
+            ExpandedContent.BeginAnimation(UIElement.OpacityProperty, fadeInAnim);
         };
-        switchTimer.Start();
         
         // Start all animations
-        this.BeginAnimation(Window.LeftProperty, leftAnim);
-        expandClone.Begin(this);
+        IslandScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, scaleXAnim);
+        IslandScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, scaleYAnim);
+        CollapsedContentScale.BeginAnimation(ScaleTransform.ScaleXProperty, contentScaleXAnim);
+        CollapsedContentScale.BeginAnimation(ScaleTransform.ScaleYProperty, contentScaleYAnim);
+        CollapsedContent.BeginAnimation(UIElement.OpacityProperty, fadeOutAnim);
     }
 
     private void CollapseIsland()
@@ -152,53 +188,71 @@ public partial class MainWindow : Window
         _viewModel.IsExpanded = false;
         _idleTimer.Stop();
         
-        // Get the collapse animation from resources
-        var collapseAnim = (Storyboard)App.Current.Resources["CollapseAnimation"];
-        var collapseClone = collapseAnim.Clone();
-        
-        // Calculate center position for collapsed state
-        var screenWidth = SystemParameters.PrimaryScreenWidth;
-        var targetLeft = (screenWidth - 150) / 2;
-        
-        // Animate window position smoothly
-        var leftAnim = new DoubleAnimation
+        // Smooth scale animation using GPU-accelerated transforms
+        var scaleXAnim = new DoubleAnimation
         {
-            To = targetLeft,
-            Duration = TimeSpan.FromSeconds(0.5),
+            From = IslandScaleTransform.ScaleX,
+            To = 0.375, // 150/400
+            Duration = TimeSpan.FromSeconds(0.45),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
         };
         
-        // Start content fade transition
-        ExpandedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+        var scaleYAnim = new DoubleAnimation
+        {
+            From = IslandScaleTransform.ScaleY,
+            To = 0.2, // 40/200
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        
+        // Counter-scale the collapsed content so text stays same size
+        var contentScaleXAnim = new DoubleAnimation
+        {
+            From = CollapsedContentScale.ScaleX,
+            To = 2.667, // 1/0.375
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        
+        var contentScaleYAnim = new DoubleAnimation
+        {
+            From = CollapsedContentScale.ScaleY,
+            To = 5.0, // 1/0.2
+            Duration = TimeSpan.FromSeconds(0.45),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+        };
+        
+        // Fade out expanded content
+        var fadeOutAnim = new DoubleAnimation
         {
             From = 1,
             To = 0,
-            Duration = TimeSpan.FromSeconds(0.2),
+            Duration = TimeSpan.FromSeconds(0.15),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseIn }
-        });
+        };
         
-        // After a short delay, switch content and fade in
-        var switchTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(0.15) };
-        switchTimer.Tick += (s, e) =>
+        fadeOutAnim.Completed += (s, e) =>
         {
-            switchTimer.Stop();
             ExpandedContent.Visibility = Visibility.Collapsed;
             CollapsedContent.Visibility = Visibility.Visible;
-            CollapsedContent.Opacity = 0;
             
-            CollapsedContent.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation
+            // Fade in collapsed content
+            var fadeInAnim = new DoubleAnimation
             {
                 From = 0,
                 To = 1,
-                Duration = TimeSpan.FromSeconds(0.35),
+                Duration = TimeSpan.FromSeconds(0.3),
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
-            });
+            };
+            CollapsedContent.BeginAnimation(UIElement.OpacityProperty, fadeInAnim);
         };
-        switchTimer.Start();
         
         // Start all animations
-        this.BeginAnimation(Window.LeftProperty, leftAnim);
-        collapseClone.Begin(this);
+        IslandScaleTransform.BeginAnimation(ScaleTransform.ScaleXProperty, scaleXAnim);
+        IslandScaleTransform.BeginAnimation(ScaleTransform.ScaleYProperty, scaleYAnim);
+        CollapsedContentScale.BeginAnimation(ScaleTransform.ScaleXProperty, contentScaleXAnim);
+        CollapsedContentScale.BeginAnimation(ScaleTransform.ScaleYProperty, contentScaleYAnim);
+        ExpandedContent.BeginAnimation(UIElement.OpacityProperty, fadeOutAnim);
     }
 
     private void ResetIdleTimer()
