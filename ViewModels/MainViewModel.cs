@@ -186,6 +186,9 @@ namespace Woobly.ViewModels
         public void SaveSettings()
         {
             _storageService.SaveSettings(Settings);
+            
+            // Immediately update weather with new settings
+            _ = UpdateWeather();
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;

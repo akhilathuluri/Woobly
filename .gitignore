@@ -76,6 +76,7 @@ $RECYCLE.BIN/
 # Local application data
 appsettings.Development.json
 appsettings.Local.json
+appsettings.json
 
 # User secrets (API keys, etc.)
 secrets.json

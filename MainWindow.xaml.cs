@@ -429,9 +429,27 @@ public partial class MainWindow : Window
         ResetIdleTimer();
     }
 
-    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    private async void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.SaveSettings();
+        var button = sender as WpfControls.Button;
+        if (button != null)
+        {
+            var originalContent = button.Content;
+            button.Content = "Saved ✓";
+            button.IsEnabled = false;
+            
+            _viewModel.SaveSettings();
+            
+            // Wait a moment then restore button
+            await System.Threading.Tasks.Task.Delay(1500);
+            button.Content = originalContent;
+            button.IsEnabled = true;
+        }
+        else
+        {
+            _viewModel.SaveSettings();
+        }
+        
         ResetIdleTimer();
     }
 
