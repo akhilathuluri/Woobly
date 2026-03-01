@@ -83,4 +83,68 @@ namespace Woobly.Converters
             throw new NotImplementedException();
         }
     }
+
+    public class Base64ToImageConverter : IValueConverter
+    {
+        public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string base64String && !string.IsNullOrWhiteSpace(base64String))
+            {
+                try
+                {
+                    byte[] imageBytes = System.Convert.FromBase64String(base64String);
+                    using var memStream = new System.IO.MemoryStream(imageBytes);
+                    
+                    var bitmap = new System.Windows.Media.Imaging.BitmapImage();
+                    bitmap.BeginInit();
+                    bitmap.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+                    bitmap.StreamSource = memStream;
+                    bitmap.EndInit();
+                    bitmap.Freeze(); // Important for cross-thread access
+                    
+                    return bitmap;
+                }
+                catch
+                {
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class StringNullOrEmptyToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string str)
+                return string.IsNullOrWhiteSpace(str) ? Visibility.Collapsed : Visibility.Visible;
+            return Visibility.Collapsed;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class InverseStringNullOrEmptyToVisibilityConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is string str)
+                return string.IsNullOrWhiteSpace(str) ? Visibility.Visible : Visibility.Collapsed;
+            return Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

@@ -166,37 +166,158 @@
                                       Margin="0,70,0,0"
                                       Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource InverseBoolToVisibilityConverter}}"/>
                             
-                            <StackPanel Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
-                                       Margin="0,15,0,0">
-                                <TextBlock Text="{Binding MediaInfo.Title}"
-                                          Foreground="{StaticResource PrimaryTextBrush}"
-                                          FontFamily="Space Grotesk"
-                                          FontSize="16"
-                                          FontWeight="SemiBold"
-                                          TextTrimming="CharacterEllipsis"
-                                          HorizontalAlignment="Center"
-                                          Margin="0,0,0,6"/>
-                                <TextBlock Text="{Binding MediaInfo.Artist}"
-                                          Foreground="{StaticResource SecondaryTextBrush}"
-                                          FontFamily="Space Grotesk"
-                                          FontSize="11"
-                                          FontWeight="Normal"
-                                          TextTrimming="CharacterEllipsis"
-                                          HorizontalAlignment="Center"
-                                          Margin="0,0,0,18"/>
+                            <Grid Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
+                                  Margin="0,8,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
                                 
-                                <!-- Modern Progress Bar with Gradient -->
+                                <!-- Album Art -->
+                                <Border Grid.Column="0"
+                                       Width="80"
+                                       Height="80"
+                                       CornerRadius="8"
+                                       Background="{StaticResource SecondaryBackgroundBrush}"
+                                       Margin="0,0,12,0"
+                                       ClipToBounds="True">
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000" BlurRadius="8" ShadowDepth="0" Opacity="0.4"/>
+                                    </Border.Effect>
+                                    
+                                    <Grid>
+                                        <!-- Album Art Image -->
+                                        <Image Source="{Binding MediaInfo.AlbumArt, Converter={StaticResource Base64ToImageConverter}}"
+                                              Stretch="UniformToFill"
+                                              Visibility="{Binding MediaInfo.AlbumArt, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"/>
+                                        
+                                        <!-- Placeholder Icon when no album art -->
+                                        <Viewbox Width="40" Height="40"
+                                                Visibility="{Binding MediaInfo.AlbumArt, Converter={StaticResource InverseStringNullOrEmptyToVisibilityConverter}}">
+                                            <Path Data="M12 3v9.28c-.47-.17-.97-.28-1.5-.28C8.01 12 6 14.01 6 16.5S8.01 21 10.5 21c2.31 0 4.2-1.75 4.45-4H15V6h4V3h-7z"
+                                                 Fill="{StaticResource TertiaryTextBrush}"
+                                                 Stretch="Uniform"/>
+                                        </Viewbox>
+                                    </Grid>
+                                </Border>
+                                
+                                <!-- Media Info and Controls -->
+                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                    <!-- Title and Artist -->
+                                    <TextBlock Text="{Binding MediaInfo.Title}"
+                                              Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontFamily="Space Grotesk"
+                                              FontSize="14"
+                                              FontWeight="SemiBold"
+                                              TextTrimming="CharacterEllipsis"
+                                              Margin="0,0,0,4"/>
+                                    <TextBlock Text="{Binding MediaInfo.Artist}"
+                                              Foreground="{StaticResource SecondaryTextBrush}"
+                                              FontFamily="Space Grotesk"
+                                              FontSize="11"
+                                              FontWeight="Normal"
+                                              TextTrimming="CharacterEllipsis"
+                                              Margin="0,0,0,10"/>
+                                    
+                                    <!-- Playback Controls -->
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                                        <!-- Previous Button -->
+                                        <Button x:Name="PreviousButton"
+                                               Width="32"
+                                               Height="32"
+                                               Background="{StaticResource SecondaryBackgroundBrush}"
+                                               BorderBrush="{StaticResource BorderBrush}"
+                                               BorderThickness="1.5"
+                                               Margin="0,0,8,0"
+                                               Cursor="Hand"
+                                               Click="MediaPrevious_Click">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="16"/>
+                                                </Style>
+                                            </Button.Resources>
+                                            <Viewbox Width="14" Height="14">
+                                                <Path Data="M6 6h2v12H6zm3.5 6l8.5 6V6z"
+                                                     Fill="{StaticResource PrimaryTextBrush}"
+                                                     Stretch="Uniform"/>
+                                            </Viewbox>
+                                        </Button>
+                                        
+                                        <!-- Play/Pause Button -->
+                                        <Button x:Name="PlayPauseButton"
+                                               Width="40"
+                                               Height="40"
+                                               Background="{StaticResource AccentBrush}"
+                                               BorderThickness="0"
+                                               Margin="0,0,8,0"
+                                               Cursor="Hand"
+                                               Click="MediaPlayPause_Click">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="20"/>
+                                                </Style>
+                                            </Button.Resources>
+                                            <Button.Effect>
+                                                <DropShadowEffect Color="#2D9CDB" BlurRadius="12" ShadowDepth="0" Opacity="0.5"/>
+                                            </Button.Effect>
+                                            
+                                            <Grid>
+                                                <!-- Play Icon -->
+                                                <Viewbox Width="16" Height="16"
+                                                        Visibility="{Binding MediaInfo.IsPlaying, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                                    <Path Data="M8 5v14l11-7z"
+                                                         Fill="#FFFFFF"
+                                                         Stretch="Uniform"/>
+                                                </Viewbox>
+                                                
+                                                <!-- Pause Icon -->
+                                                <Viewbox Width="16" Height="16"
+                                                        Visibility="{Binding MediaInfo.IsPlaying, Converter={StaticResource BoolToVisibilityConverter}}">
+                                                    <Path Data="M6 4h4v16H6V4zm8 0h4v16h-4V4z"
+                                                         Fill="#FFFFFF"
+                                                         Stretch="Uniform"/>
+                                                </Viewbox>
+                                            </Grid>
+                                        </Button>
+                                        
+                                        <!-- Next Button -->
+                                        <Button x:Name="NextButton"
+                                               Width="32"
+                                               Height="32"
+                                               Background="{StaticResource SecondaryBackgroundBrush}"
+                                               BorderBrush="{StaticResource BorderBrush}"
+                                               BorderThickness="1.5"
+                                               Cursor="Hand"
+                                               Click="MediaNext_Click">
+                                            <Button.Resources>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="CornerRadius" Value="16"/>
+                                                </Style>
+                                            </Button.Resources>
+                                            <Viewbox Width="14" Height="14">
+                                                <Path Data="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"
+                                                     Fill="{StaticResource PrimaryTextBrush}"
+                                                     Stretch="Uniform"/>
+                                            </Viewbox>
+                                        </Button>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                            
+                            <!-- Progress Bar (Full Width) -->
+                            <StackPanel Visibility="{Binding MediaInfo.IsAvailable, Converter={StaticResource BoolToVisibilityConverter}}"
+                                       Margin="0,12,0,0">
                                 <Border Background="{StaticResource SecondaryBackgroundBrush}"
-                                       Height="5"
-                                       CornerRadius="3"
-                                       Margin="25,0">
+                                       Height="4"
+                                       CornerRadius="2"
+                                       Margin="0,0,0,6">
                                     <Border.Effect>
                                         <DropShadowEffect Color="#000000" BlurRadius="4" ShadowDepth="0" Opacity="0.3"/>
                                     </Border.Effect>
                                     <Rectangle Fill="{StaticResource AccentBrush}"
                                               HorizontalAlignment="Left"
-                                              RadiusX="3"
-                                              RadiusY="3">
+                                              RadiusX="2"
+                                              RadiusY="2">
                                         <Rectangle.Effect>
                                             <DropShadowEffect Color="#2D9CDB" BlurRadius="8" ShadowDepth="0" Opacity="0.6"/>
                                         </Rectangle.Effect>
@@ -212,24 +333,27 @@
                                     </Rectangle>
                                 </Border>
                                 
-                                <StackPanel Orientation="Horizontal" 
-                                          HorizontalAlignment="Center"
-                                          Margin="0,10,0,0">
-                                    <TextBlock Text="{Binding MediaInfo.FormattedPosition}"
+                                <!-- Time Display -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0"
+                                              Text="{Binding MediaInfo.FormattedPosition}"
                                               Foreground="{StaticResource TertiaryTextBrush}"
                                               FontFamily="Space Grotesk"
-                                              FontSize="10"
-                                              FontWeight="Medium"/>
-                                    <TextBlock Text=" / "
+                                              FontSize="9"
+                                              FontWeight="Medium"
+                                              HorizontalAlignment="Left"/>
+                                    <TextBlock Grid.Column="1"
+                                              Text="{Binding MediaInfo.FormattedDuration}"
                                               Foreground="{StaticResource TertiaryTextBrush}"
                                               FontFamily="Space Grotesk"
-                                              FontSize="10"/>
-                                    <TextBlock Text="{Binding MediaInfo.FormattedDuration}"
-                                              Foreground="{StaticResource TertiaryTextBrush}"
-                                              FontFamily="Space Grotesk"
-                                              FontSize="10"
-                                              FontWeight="Medium"/>
-                                </StackPanel>
+                                              FontSize="9"
+                                              FontWeight="Medium"
+                                              HorizontalAlignment="Right"/>
+                                </Grid>
                             </StackPanel>
                         </StackPanel>
                         

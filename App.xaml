@@ -19,6 +19,9 @@
             <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
             <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
             <converters:BoolToStrikethroughConverter x:Key="BoolToStrikethroughConverter"/>
+            <converters:Base64ToImageConverter x:Key="Base64ToImageConverter"/>
+            <converters:StringNullOrEmptyToVisibilityConverter x:Key="StringNullOrEmptyToVisibilityConverter"/>
+            <converters:InverseStringNullOrEmptyToVisibilityConverter x:Key="InverseStringNullOrEmptyToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

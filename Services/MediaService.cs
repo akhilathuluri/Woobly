@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 using Windows.Media.Control;
 using System.Windows.Threading;
 using Woobly.Models;
+using System.IO;
+using Windows.Storage.Streams;
 
 namespace Woobly.Services
 {
@@ -13,6 +15,7 @@ namespace Woobly.Services
         private DispatcherTimer _updateTimer;
         private MediaInfo _currentMedia;
         private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
+        private GlobalSystemMediaTransportControlsSession? _currentSession;
 
         public event Action<MediaInfo>? MediaChanged;
 
@@ -46,16 +49,16 @@ namespace Woobly.Services
                 if (_sessionManager == null)
                     return;
 
-                var currentSession = _sessionManager.GetCurrentSession();
-                if (currentSession == null)
+                _currentSession = _sessionManager.GetCurrentSession();
+                if (_currentSession == null)
                 {
                     _currentMedia.IsAvailable = false;
                     MediaChanged?.Invoke(_currentMedia);
                     return;
                 }
 
-                var playbackInfo = currentSession.GetPlaybackInfo();
-                var mediaProperties = await currentSession.TryGetMediaPropertiesAsync();
+                var playbackInfo = _currentSession.GetPlaybackInfo();
+                var mediaProperties = await _currentSession.TryGetMediaPropertiesAsync();
 
                 if (mediaProperties != null)
                 {
@@ -64,7 +67,30 @@ namespace Woobly.Services
                     _currentMedia.Artist = mediaProperties.Artist ?? "Unknown Artist";
                     _currentMedia.Album = mediaProperties.AlbumTitle ?? string.Empty;
                     
-                    var timeline = currentSession.GetTimelineProperties();
+                    // Get album art thumbnail
+                    try
+                    {
+                        var thumbnail = mediaProperties.Thumbnail;
+                        if (thumbnail != null)
+                        {
+                            using var stream = await thumbnail.OpenReadAsync();
+                            var reader = new DataReader(stream.GetInputStreamAt(0));
+                            var bytes = new byte[stream.Size];
+                            await reader.LoadAsync((uint)stream.Size);
+                            reader.ReadBytes(bytes);
+                            _currentMedia.AlbumArt = Convert.ToBase64String(bytes);
+                        }
+                        else
+                        {
+                            _currentMedia.AlbumArt = null;
+                        }
+                    }
+                    catch
+                    {
+                        _currentMedia.AlbumArt = null;
+                    }
+                    
+                    var timeline = _currentSession.GetTimelineProperties();
                     _currentMedia.Duration = timeline.EndTime;
                     _currentMedia.Position = timeline.Position;
                     
@@ -87,6 +113,52 @@ namespace Woobly.Services
         public MediaInfo GetCurrentMedia()
         {
             return _currentMedia;
+        }
+
+        // Playback control methods
+        public async Task PlayPauseAsync()
+        {
+            try
+            {
+                if (_currentSession == null) return;
+
+                if (_currentMedia.IsPlaying)
+                {
+                    await _currentSession.TryPauseAsync();
+                }
+                else
+                {
+                    await _currentSession.TryPlayAsync();
+                }
+
+                // Force immediate update
+                await UpdateMediaInfoAsync();
+            }
+            catch { }
+        }
+
+        public async Task NextAsync()
+        {
+            try
+            {
+                if (_currentSession == null) return;
+                await _currentSession.TrySkipNextAsync();
+                await Task.Delay(500); // Wait for media change
+                await UpdateMediaInfoAsync();
+            }
+            catch { }
+        }
+
+        public async Task PreviousAsync()
+        {
+            try
+            {
+                if (_currentSession == null) return;
+                await _currentSession.TrySkipPreviousAsync();
+                await Task.Delay(500); // Wait for media change
+                await UpdateMediaInfoAsync();
+            }
+            catch { }
         }
     }
 }

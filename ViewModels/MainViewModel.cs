@@ -191,6 +191,21 @@ namespace Woobly.ViewModels
             _ = UpdateWeather();
         }
 
+        public async System.Threading.Tasks.Task MediaPlayPauseAsync()
+        {
+            await _mediaService.PlayPauseAsync();
+        }
+
+        public async System.Threading.Tasks.Task MediaNextAsync()
+        {
+            await _mediaService.NextAsync();
+        }
+
+        public async System.Threading.Tasks.Task MediaPreviousAsync()
+        {
+            await _mediaService.PreviousAsync();
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {

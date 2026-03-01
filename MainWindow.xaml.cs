@@ -453,6 +453,24 @@ public partial class MainWindow : Window
         ResetIdleTimer();
     }
 
+    private async void MediaPlayPause_Click(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.MediaPlayPauseAsync();
+        ResetIdleTimer();
+    }
+
+    private async void MediaNext_Click(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.MediaNextAsync();
+        ResetIdleTimer();
+    }
+
+    private async void MediaPrevious_Click(object sender, RoutedEventArgs e)
+    {
+        await _viewModel.MediaPreviousAsync();
+        ResetIdleTimer();
+    }
+
     protected override void OnDeactivated(EventArgs e)
     {
         base.OnDeactivated(e);
