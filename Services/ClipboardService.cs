@@ -11,11 +11,13 @@ namespace Woobly.Services
         private readonly List<ClipboardItem> _items = new List<ClipboardItem>();
         private string? _lastClipboardText;
         private DispatcherTimer _monitorTimer;
+        private int _historyLimit;
 
         public event Action<List<ClipboardItem>>? ClipboardChanged;
 
-        public ClipboardService()
+        public ClipboardService(int historyLimit = 2)
         {
+            _historyLimit = historyLimit < 1 ? 1 : historyLimit;
             _monitorTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(500)
@@ -46,9 +48,9 @@ namespace Woobly.Services
             var item = new ClipboardItem { Content = text };
             _items.Insert(0, item);
 
-            // Keep only last 2 items
-            if (_items.Count > 2)
-                _items.RemoveRange(2, _items.Count - 2);
+            // Keep only last N items based on history limit
+            if (_items.Count > _historyLimit)
+                _items.RemoveRange(_historyLimit, _items.Count - _historyLimit);
 
             ClipboardChanged?.Invoke(new List<ClipboardItem>(_items));
         }
@@ -56,6 +58,17 @@ namespace Woobly.Services
         public List<ClipboardItem> GetItems()
         {
             return new List<ClipboardItem>(_items);
+        }
+
+        public void UpdateHistoryLimit(int historyLimit)
+        {
+            _historyLimit = historyLimit < 1 ? 1 : historyLimit;
+
+            if (_items.Count > _historyLimit)
+            {
+                _items.RemoveRange(_historyLimit, _items.Count - _historyLimit);
+                ClipboardChanged?.Invoke(new List<ClipboardItem>(_items));
+            }
         }
 
         public void RestoreToClipboard(string text)

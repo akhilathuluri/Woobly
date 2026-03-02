@@ -66,6 +66,10 @@ namespace Woobly.Services
                         if (!string.IsNullOrWhiteSpace(userSettings.OpenWeatherApiKey))
                             settings.OpenWeatherApiKey = userSettings.OpenWeatherApiKey;
                         
+                        settings.ClipboardHistoryLimit = userSettings.ClipboardHistoryLimit > 0
+                            ? userSettings.ClipboardHistoryLimit
+                            : settings.ClipboardHistoryLimit;
+                        settings.RunOnStartup = userSettings.RunOnStartup;
                         settings.IslandWidth = userSettings.IslandWidth;
                         settings.IslandHeight = userSettings.IslandHeight;
                         settings.ExpandedWidth = userSettings.ExpandedWidth;

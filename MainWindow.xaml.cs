@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Windows;
 using WpfControls = System.Windows.Controls;
@@ -7,6 +7,9 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Woobly.ViewModels;
+using System.Diagnostics;
+using WinForms = System.Windows.Forms;
+using Drawing = System.Drawing;
 
 namespace Woobly;
 
@@ -17,8 +20,11 @@ public partial class MainWindow : Window
     private int _currentPage = 0;
     private System.Windows.Point _startPoint;
     private bool _isDragging;
+    private bool _gestureHandled;
     private DispatcherTimer _idleTimer;
     private readonly UIElement[] _pages;
+    private readonly WinForms.NotifyIcon _notifyIcon;
+    private bool _isExiting;
 
     // Win32 API for window positioning
     [DllImport("user32.dll")]
@@ -51,6 +57,22 @@ public partial class MainWindow : Window
             ContentGrid.MouseLeftButtonDown += ContentGrid_MouseLeftButtonDown;
             ContentGrid.MouseLeftButtonUp += ContentGrid_MouseLeftButtonUp;
             ContentGrid.MouseMove += ContentGrid_MouseMove;
+
+            // Initialize system tray icon
+            _notifyIcon = new WinForms.NotifyIcon
+            {
+                Text = "Woobly",
+                Icon = GetAppIcon(),
+                Visible = true
+            };
+
+            var contextMenu = new WinForms.ContextMenuStrip();
+            contextMenu.Items.Add("Show Woobly", null, (s, _) => ShowFromTray());
+            contextMenu.Items.Add("Toggle Expand/Collapse", null, (s, _) => ToggleExpandState());
+            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
+            contextMenu.Items.Add("Exit Woobly", null, (s, _) => ExitFromTray());
+            _notifyIcon.ContextMenuStrip = contextMenu;
+            _notifyIcon.DoubleClick += (s, _) => ShowFromTray();
         }
         catch (Exception ex)
         {
@@ -75,6 +97,28 @@ public partial class MainWindow : Window
         CollapseIslandImmediate();
     }
 
+    private static Drawing.Icon GetAppIcon()
+    {
+        try
+        {
+            var exePath = Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(exePath))
+            {
+                var associatedIcon = Drawing.Icon.ExtractAssociatedIcon(exePath);
+                if (associatedIcon != null)
+                {
+                    return associatedIcon;
+                }
+            }
+        }
+        catch
+        {
+            // Fallback handled below
+        }
+
+        return System.Drawing.SystemIcons.Application;
+    }
+
     private void PositionWindow()
     {
         var screen = SystemParameters.PrimaryScreenWidth;
@@ -87,6 +131,7 @@ public partial class MainWindow : Window
         // Set initial collapsed state without animation
         IslandScaleTransform.ScaleX = 0.375; // 150/400
         IslandScaleTransform.ScaleY = 0.2;   // 40/200
+        MainBorder.CornerRadius = new CornerRadius(26);
         CollapsedContentScale.ScaleX = 2.667; // Counter-scale: 1/0.375
         CollapsedContentScale.ScaleY = 5.0;   // Counter-scale: 1/0.2
         CollapsedContent.Opacity = 1;
@@ -112,6 +157,7 @@ public partial class MainWindow : Window
         
         _isExpanded = true;
         _viewModel.IsExpanded = true;
+        MainBorder.CornerRadius = new CornerRadius(22);
         
         // Smooth scale animation using GPU-accelerated transforms
         var scaleXAnim = new DoubleAnimation
@@ -187,6 +233,7 @@ public partial class MainWindow : Window
         _isExpanded = false;
         _viewModel.IsExpanded = false;
         _idleTimer.Stop();
+        MainBorder.CornerRadius = new CornerRadius(26);
         
         // Smooth scale animation using GPU-accelerated transforms
         var scaleXAnim = new DoubleAnimation
@@ -255,6 +302,18 @@ public partial class MainWindow : Window
         ExpandedContent.BeginAnimation(UIElement.OpacityProperty, fadeOutAnim);
     }
 
+    private void ToggleExpandState()
+    {
+        if (_isExpanded)
+        {
+            CollapseIsland();
+        }
+        else
+        {
+            ExpandIsland();
+        }
+    }
+
     private void ResetIdleTimer()
     {
         // Idle timer disabled - only collapse on focus loss
@@ -274,6 +333,7 @@ public partial class MainWindow : Window
     private void ContentGrid_MouseLeftButtonUp(object sender, WpfInput.MouseButtonEventArgs e)
     {
         _isDragging = false;
+        _gestureHandled = false;
     }
 
     private void ContentGrid_MouseMove(object sender, WpfInput.MouseEventArgs e)
@@ -298,6 +358,36 @@ public partial class MainWindow : Window
         }
         
         ResetIdleTimer();
+    }
+
+    private void ContentGrid_ManipulationDelta(object sender, System.Windows.Input.ManipulationDeltaEventArgs e)
+    {
+        if (!_isExpanded || _gestureHandled)
+        {
+            return;
+        }
+
+        var deltaX = e.DeltaManipulation.Translation.X;
+
+        if (Math.Abs(deltaX) > 40)
+        {
+            if (deltaX > 0 && _currentPage > 0)
+            {
+                NavigateToPage(_currentPage - 1);
+                _gestureHandled = true;
+            }
+            else if (deltaX < 0 && _currentPage < 5)
+            {
+                NavigateToPage(_currentPage + 1);
+                _gestureHandled = true;
+            }
+        }
+
+        if (_gestureHandled)
+        {
+            e.Complete();
+            ResetIdleTimer();
+        }
     }
 
     private void NavigateToPage(int pageIndex)
@@ -429,6 +519,43 @@ public partial class MainWindow : Window
         ResetIdleTimer();
     }
 
+    private void ShowFromTray()
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        Show();
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+        Activate();
+
+        if (!_isExpanded)
+        {
+            ExpandIsland();
+        }
+    }
+
+    private void ExitFromTray()
+    {
+        _isExiting = true;
+
+        try
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+        }
+        catch
+        {
+            // Ignore disposal errors
+        }
+
+        System.Windows.Application.Current.Shutdown();
+    }
+
     private async void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
         var button = sender as WpfControls.Button;
@@ -482,9 +609,43 @@ public partial class MainWindow : Window
     
     protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
     {
-        base.OnClosing(e);
-        // Prevent accidental window closing - user must close via Task Manager or Ctrl+C
+        if (_isExiting)
+        {
+            try
+            {
+                _notifyIcon.Visible = false;
+                _notifyIcon.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+
+            base.OnClosing(e);
+            return;
+        }
+
+        // Hide to tray instead of closing
         e.Cancel = true;
-        CollapseIsland();
+        Hide();
+        if (_isExpanded)
+        {
+            CollapseIsland();
+        }
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+
+        if (_isExiting)
+        {
+            return;
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            Hide();
+        }
     }
 }

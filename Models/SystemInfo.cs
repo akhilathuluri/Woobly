@@ -12,5 +12,7 @@ namespace Woobly.Models
         public double Temperature { get; set; }
         public string? WeatherCondition { get; set; }
         public string? WeatherIcon { get; set; }
+        public double? CpuUsage { get; set; }
+        public bool IsNetworkAvailable { get; set; }
     }
 }

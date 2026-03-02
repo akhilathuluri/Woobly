@@ -18,6 +18,7 @@ namespace Woobly.ViewModels
         private readonly MediaService _mediaService;
         private readonly ClipboardService _clipboardService;
         private readonly StorageService _storageService;
+        private readonly StartupService _startupService;
         private readonly DispatcherTimer _updateTimer;
         
         private bool _isExpanded;
@@ -83,11 +84,13 @@ namespace Woobly.ViewModels
             _weatherService = new WeatherService();
             _aiService = new AIService();
             _mediaService = new MediaService();
-            _clipboardService = new ClipboardService();
             _storageService = new StorageService();
+            _startupService = new StartupService();
 
             // Load settings and tasks
             Settings = _storageService.LoadSettings();
+            Settings.RunOnStartup = _startupService.IsEnabled();
+            _clipboardService = new ClipboardService(Settings.ClipboardHistoryLimit);
             Tasks = new ObservableCollection<TaskItem>(_storageService.LoadTasks());
             ClipboardItems = new ObservableCollection<ClipboardItem>();
 
@@ -186,6 +189,12 @@ namespace Woobly.ViewModels
         public void SaveSettings()
         {
             _storageService.SaveSettings(Settings);
+
+            // Apply run-on-startup setting
+            _startupService.SetEnabled(Settings.RunOnStartup);
+
+            // Update clipboard history limit at runtime
+            _clipboardService.UpdateHistoryLimit(Settings.ClipboardHistoryLimit);
             
             // Immediately update weather with new settings
             _ = UpdateWeather();
