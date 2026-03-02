@@ -69,7 +69,8 @@
                   Height="200"
                   ClipToBounds="True"
                   IsManipulationEnabled="True"
-                  ManipulationDelta="ContentGrid_ManipulationDelta">
+                  ManipulationDelta="ContentGrid_ManipulationDelta"
+                  PreviewMouseWheel="ContentGrid_PreviewMouseWheel">
                 <!-- Collapsed State Content -->
                 <StackPanel x:Name="CollapsedContent" 
                            Orientation="Horizontal"

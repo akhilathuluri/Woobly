@@ -390,6 +390,26 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ContentGrid_PreviewMouseWheel(object sender, WpfInput.MouseWheelEventArgs e)
+    {
+        if (!_isExpanded)
+        {
+            return;
+        }
+
+        // Two-finger vertical swipe on precision touchpads maps to mouse wheel.
+        if (e.Delta < 0 && _currentPage < 5)
+        {
+            NavigateToPage(_currentPage + 1);
+            e.Handled = true;
+        }
+        else if (e.Delta > 0 && _currentPage > 0)
+        {
+            NavigateToPage(_currentPage - 1);
+            e.Handled = true;
+        }
+    }
+
     private void NavigateToPage(int pageIndex)
     {
         if (pageIndex < 0 || pageIndex > 5) return;
