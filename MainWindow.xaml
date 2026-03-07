@@ -413,45 +413,131 @@
                             </StackPanel>
                         </StackPanel>
                         
-                        <!-- Page 3: AI Response -->
+                        <!-- Page 3: AI Chat -->
                         <Grid x:Name="Page3" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5">
                             <Grid.RenderTransform>
                                 <ScaleTransform ScaleX="1" ScaleY="1"/>
                             </Grid.RenderTransform>
-                            <StackPanel>
-                                <TextBox x:Name="AIInputBox"
-                                        Background="#242424"
-                                        Foreground="#FFFFFF"
-                                        BorderBrush="#3A3A3A"
-                                        BorderThickness="1.5"
-                                        Padding="14,12"
-                                        FontSize="13"
-                                        FontFamily="Space Grotesk"
-                                        CaretBrush="#2D9CDB"
-                                        SelectionBrush="#2D9CDB"
-                                        TextWrapping="Wrap"
-                                        Height="45"
-                                        Margin="0,0,0,12"
-                                        VerticalContentAlignment="Center"
-                                        KeyDown="AIInputBox_KeyDown">
-                                    <TextBox.Resources>
-                                        <Style TargetType="Border">
-                                            <Setter Property="CornerRadius" Value="10"/>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="22"/>
+                                <RowDefinition Height="*"/>
+                                <RowDefinition Height="40"/>
+                            </Grid.RowDefinitions>
+
+                            <!-- Header: label + delete button -->
+                            <Grid Grid.Row="0" Margin="0,0,0,4">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="✦"
+                                               Foreground="{StaticResource AccentBrush}"
+                                               FontFamily="Space Grotesk"
+                                               FontSize="10"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,5,0"/>
+                                    <TextBlock Text="AI Chat"
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               FontFamily="Space Grotesk"
+                                               FontSize="10"
+                                               FontWeight="SemiBold"
+                                               VerticalAlignment="Center"/>
+                                </StackPanel>
+                                <Button x:Name="DeleteChatButton"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center"
+                                        Width="22" Height="18"
+                                        Cursor="Hand"
+                                        ToolTip="Clear chat"
+                                        Click="DeleteChat_Click">
+                                    <Button.Style>
+                                        <Style TargetType="Button">
+                                            <Setter Property="Background" Value="Transparent"/>
+                                            <Setter Property="Foreground" Value="#666666"/>
+                                            <Setter Property="BorderThickness" Value="0"/>
+                                            <Setter Property="FontFamily" Value="Space Grotesk"/>
+                                            <Setter Property="FontSize" Value="12"/>
+                                            <Setter Property="Template">
+                                                <Setter.Value>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border Background="{TemplateBinding Background}"
+                                                                CornerRadius="4"
+                                                                Padding="3,1">
+                                                            <ContentPresenter HorizontalAlignment="Center"
+                                                                              VerticalAlignment="Center"/>
+                                                        </Border>
+                                                    </ControlTemplate>
+                                                </Setter.Value>
+                                            </Setter>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Foreground" Value="#FF5555"/>
+                                                    <Setter Property="Background" Value="#2A1515"/>
+                                                </Trigger>
+                                            </Style.Triggers>
                                         </Style>
-                                    </TextBox.Resources>
-                                </TextBox>
-                                <ScrollViewer Height="120" VerticalScrollBarVisibility="Auto">
-                                    <TextBlock Text="{Binding AIResponse}"
-                                              Foreground="{StaticResource SecondaryTextBrush}"
-                                              FontFamily="Space Grotesk"
-                                              FontSize="11"
-                                              FontWeight="Normal"
-                                              TextWrapping="Wrap"
-                                              LineHeight="20"
-                                              Padding="8"
-                                              TextAlignment="Left"/>
-                                </ScrollViewer>
-                            </StackPanel>
+                                    </Button.Style>
+                                    <TextBlock Text="✕" FontSize="11" FontFamily="Space Grotesk"/>
+                                </Button>
+                            </Grid>
+
+                            <!-- Chat history -->
+                            <ScrollViewer x:Name="ChatScrollViewer"
+                                          Grid.Row="1"
+                                          VerticalScrollBarVisibility="Auto"
+                                          Margin="0,0,0,6">
+                                <ItemsControl ItemsSource="{Binding ChatMessages}">
+                                    <ItemsControl.ItemContainerStyle>
+                                        <Style TargetType="ContentPresenter">
+                                            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                                        </Style>
+                                    </ItemsControl.ItemContainerStyle>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="0,2">
+                                                <Border x:Name="Bubble"
+                                                        MaxWidth="230"
+                                                        Padding="8,5"
+                                                        CornerRadius="8"
+                                                        HorizontalAlignment="Right"
+                                                        Background="#1D3D6B">
+                                                    <TextBlock x:Name="BubbleText"
+                                                               Text="{Binding Content}"
+                                                               FontFamily="Space Grotesk"
+                                                               FontSize="11"
+                                                               TextWrapping="Wrap"
+                                                               Foreground="#FFFFFF"/>
+                                                </Border>
+                                            </Grid>
+                                            <DataTemplate.Triggers>
+                                                <DataTrigger Binding="{Binding IsUser}" Value="False">
+                                                    <Setter TargetName="Bubble" Property="HorizontalAlignment" Value="Left"/>
+                                                    <Setter TargetName="Bubble" Property="Background" Value="#2E2E2E"/>
+                                                    <Setter TargetName="BubbleText" Property="Foreground" Value="#CCCCCC"/>
+                                                </DataTrigger>
+                                            </DataTemplate.Triggers>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+
+                            <!-- Input box -->
+                            <TextBox x:Name="AIInputBox"
+                                     Grid.Row="2"
+                                     Background="#242424"
+                                     Foreground="#FFFFFF"
+                                     BorderBrush="#3A3A3A"
+                                     BorderThickness="1.5"
+                                     Padding="10,0"
+                                     FontSize="12"
+                                     FontFamily="Space Grotesk"
+                                     CaretBrush="#2D9CDB"
+                                     SelectionBrush="#2D9CDB"
+                                     VerticalContentAlignment="Center"
+                                     KeyDown="AIInputBox_KeyDown">
+                                <TextBox.Resources>
+                                    <Style TargetType="Border">
+                                        <Setter Property="CornerRadius" Value="10"/>
+                                    </Style>
+                                </TextBox.Resources>
+                            </TextBox>
                         </Grid>
                         
                         <!-- Page 4: Task Memory -->

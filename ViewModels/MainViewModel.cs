@@ -25,10 +25,14 @@ namespace Woobly.ViewModels
         private int _currentPageIndex;
         private SystemInfo _systemInfo = new SystemInfo();
         private MediaInfo _mediaInfo = new MediaInfo();
-        private string _aiResponse = string.Empty;
+        private ObservableCollection<ChatMessage> _chatMessages = new ObservableCollection<ChatMessage>();
+        private bool _isAIStreaming;
         private ObservableCollection<TaskItem> _tasks = new ObservableCollection<TaskItem>();
         private ObservableCollection<ClipboardItem> _clipboardItems = new ObservableCollection<ClipboardItem>();
         private AppSettings _settings = new AppSettings();
+
+        /// <summary>Called by the view to scroll the chat to the bottom after each token.</summary>
+        public Action? RequestScrollToBottom;
 
         public bool IsExpanded
         {
@@ -54,10 +58,16 @@ namespace Woobly.ViewModels
             set { _mediaInfo = value; OnPropertyChanged(); }
         }
 
-        public string AIResponse
+        public ObservableCollection<ChatMessage> ChatMessages
         {
-            get => _aiResponse;
-            set { _aiResponse = value; OnPropertyChanged(); }
+            get => _chatMessages;
+            set { _chatMessages = value; OnPropertyChanged(); }
+        }
+
+        public bool IsAIStreaming
+        {
+            get => _isAIStreaming;
+            set { _isAIStreaming = value; OnPropertyChanged(); }
         }
 
         public ObservableCollection<TaskItem> Tasks
@@ -150,13 +160,52 @@ namespace Woobly.ViewModels
 
         public async void SendAIMessage(string message)
         {
-            AIResponse = "Thinking...";
-            var response = await _aiService.GetResponseAsync(
-                Settings.OpenRouterApiKey ?? string.Empty, 
-                Settings.OpenRouterModel, 
-                message
+            if (IsAIStreaming || string.IsNullOrWhiteSpace(message)) return;
+
+            // Record user message
+            ChatMessages.Add(new ChatMessage { Role = "user", Content = message });
+            RequestScrollToBottom?.Invoke();
+
+            // Placeholder for streamed assistant reply
+            var assistantMsg = new ChatMessage { Role = "assistant", Content = "" };
+            ChatMessages.Add(assistantMsg);
+            IsAIStreaming = true;
+
+            // Build history (everything except the empty assistant placeholder)
+            var history = ChatMessages
+                .Take(ChatMessages.Count - 1)
+                .Select(m => (m.Role, m.Content))
+                .ToList();
+
+            var dispatcher = System.Windows.Application.Current.Dispatcher;
+
+            await _aiService.StreamResponseAsync(
+                Settings.OpenRouterApiKey,
+                Settings.OpenRouterModel,
+                history,
+                token =>
+                {
+                    dispatcher.Invoke(() =>
+                    {
+                        assistantMsg.Content += token;
+                        RequestScrollToBottom?.Invoke();
+                    });
+                }
             );
-            AIResponse = response;
+
+            // Clean up markdown from the full accumulated response
+            dispatcher.Invoke(() =>
+            {
+                assistantMsg.Content = AIService.Sanitize(assistantMsg.Content);
+            });
+
+            IsAIStreaming = false;
+        }
+
+        public void ClearChat()
+        {
+            ChatMessages.Clear();
+            IsAIStreaming = false;
         }
 
         public void AddTask(string content)

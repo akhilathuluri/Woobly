@@ -1,9 +1,14 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Woobly.Models;
 
 namespace Woobly.Services
 {
@@ -14,101 +19,140 @@ namespace Woobly.Services
 
         public AIService()
         {
-            _httpClient = new HttpClient();
+            _httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(60)
+            };
         }
 
-        public async Task<string> GetResponseAsync(string? apiKey, string model, string userMessage)
+        /// <summary>
+        /// Streams a chat completion response token by token via SSE.
+        /// Supports full conversation history for context-aware replies.
+        /// </summary>
+        public async Task StreamResponseAsync(
+            string? apiKey,
+            string model,
+            IEnumerable<(string role, string content)> messages,
+            Action<string> onToken,
+            CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(model))
-                return "Please configure AI settings first.";
+            {
+                onToken("Please configure AI settings first.");
+                return;
+            }
 
             try
             {
-                var request = new
+                var requestBody = new
                 {
-                    model = model,
-                    messages = new[]
-                    {
-                        new { role = "user", content = userMessage }
-                    }
+                    model,
+                    stream = true,
+                    messages = messages
+                        .Select(m => new { role = m.role, content = m.content })
+                        .ToArray()
                 };
 
-                var jsonContent = JsonConvert.SerializeObject(request);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var json = JsonConvert.SerializeObject(requestBody);
 
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
-                _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "https://github.com/woobly");
-                _httpClient.DefaultRequestHeaders.Add("X-Title", "Woobly");
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, OpenRouterUrl);
+                httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
+                httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
+                httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://github.com/woobly");
+                httpRequest.Headers.TryAddWithoutValidation("X-Title", "Woobly");
 
-                var response = await _httpClient.PostAsync(OpenRouterUrl, content);
-                var responseText = await response.Content.ReadAsStringAsync();
+                using var response = await _httpClient.SendAsync(
+                    httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    // Try to parse error details
+                    var errorText = await response.Content.ReadAsStringAsync(ct);
                     try
                     {
-                        var errorJson = JObject.Parse(responseText);
-                        var errorMessage = errorJson["error"]?["message"]?.Value<string>();
-                        return $"Error ({response.StatusCode}): {errorMessage ?? responseText}";
+                        var errorJson = JObject.Parse(errorText);
+                        var errorMsg = errorJson["error"]?["message"]?.Value<string>();
+                        onToken($"Error ({response.StatusCode}): {errorMsg ?? errorText}");
                     }
                     catch
                     {
-                        return $"Error ({response.StatusCode}): {responseText}";
+                        onToken($"Error ({response.StatusCode}): {errorText}");
                     }
+                    return;
                 }
 
-                var json = JObject.Parse(responseText);
-                var aiResponse = json["choices"]?[0]?["message"]?["content"]?.Value<string>();
+                using var stream = await response.Content.ReadAsStreamAsync(ct);
+                using var reader = new StreamReader(stream);
 
-                if (string.IsNullOrWhiteSpace(aiResponse))
-                    return "No response received.";
+                while (!reader.EndOfStream && !ct.IsCancellationRequested)
+                {
+                    var line = await reader.ReadLineAsync(ct);
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+                    if (!line.StartsWith("data: ")) continue;
 
-                // Sanitize and format the response
-                return SanitizeResponse(aiResponse);
+                    var data = line["data: ".Length..].Trim();
+                    if (data == "[DONE]") break;
+
+                    try
+                    {
+                        var chunk = JObject.Parse(data);
+                        var token = chunk["choices"]?[0]?["delta"]?["content"]?.Value<string>();
+                        if (token != null)
+                            onToken(token);
+                    }
+                    catch { /* malformed SSE chunk — skip */ }
+                }
             }
+            catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                return $"Error: {ex.Message}";
+                onToken($"\nError: {ex.Message}");
             }
         }
 
-        private string SanitizeResponse(string response)
+        /// <summary>
+        /// Cleans up markdown artifacts from a completed response string.
+        /// </summary>
+        public static string Sanitize(string response)
         {
-            if (string.IsNullOrWhiteSpace(response))
-                return response;
+            if (string.IsNullOrWhiteSpace(response)) return response;
 
-            // Remove excessive whitespace and normalize line breaks
-            response = System.Text.RegularExpressions.Regex.Replace(response, @"\r\n|\r|\n", "\n");
-            
-            // Remove multiple consecutive blank lines (keep max 1 blank line)
+            // Normalise line endings
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"\r\n|\r", "\n");
+
+            // Collapse 3+ blank lines to one blank line
             response = System.Text.RegularExpressions.Regex.Replace(response, @"\n{3,}", "\n\n");
-            
-            // Remove leading/trailing whitespace from each line
+
+            // Remove markdown code fences (```lang or ```)
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"```[\w]*\n?", "");
+
+            // Remove bold/italic markers
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"\*{1,3}([^*]+)\*{1,3}", "$1");
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"_{1,2}([^_]+)_{1,2}", "$1");
+
+            // Remove stray lone quotes used as emphasis: "Word" → Word
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"""([^""\n]+)""", "$1");
+
+            // Convert markdown bullets (* / - at line start) to •
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\* ", "• ",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^- ", "• ",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\d+\. ", "• ",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Convert markdown headers (### / ## / #) to plain uppercase line
+            response = System.Text.RegularExpressions.Regex.Replace(response, @"^#{1,6}\s*(.+)$", "$1",
+                System.Text.RegularExpressions.RegexOptions.Multiline);
+
+            // Trim each line
             var lines = response.Split('\n');
             for (int i = 0; i < lines.Length; i++)
-            {
-                lines[i] = lines[i].Trim();
-            }
+                lines[i] = lines[i].TrimEnd();
             response = string.Join("\n", lines);
-            
-            // Remove markdown code block markers for cleaner display
-            response = System.Text.RegularExpressions.Regex.Replace(response, @"```[\w]*\n?", "");
-            
-            // Remove excessive spaces
+
+            // Collapse multiple spaces
             response = System.Text.RegularExpressions.Regex.Replace(response, @" {2,}", " ");
-            
-            // Clean up markdown bold/italic for better readability
-            response = response.Replace("**", "");
-            response = response.Replace("__", "");
-            
-            // Convert markdown lists to simple format
-            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\* ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
-            response = System.Text.RegularExpressions.Regex.Replace(response, @"^- ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
-            response = System.Text.RegularExpressions.Regex.Replace(response, @"^\d+\. ", "• ", System.Text.RegularExpressions.RegexOptions.Multiline);
-            
-            // Trim final result
+
             return response.Trim();
         }
     }

@@ -43,6 +43,7 @@ public partial class MainWindow : Window
             
             _viewModel = new MainViewModel();
             DataContext = _viewModel;
+            _viewModel.RequestScrollToBottom = () => ChatScrollViewer?.ScrollToBottom();
 
             _pages = new UIElement[] { Page1, Page2, Page3, Page4, Page5, Page6 };
 
@@ -484,6 +485,12 @@ public partial class MainWindow : Window
         }
     }
 
+    private void DeleteChat_Click(object sender, RoutedEventArgs e)
+    {
+        _viewModel.ClearChat();
+        ResetIdleTimer();
+    }
+
     private void AIInputBox_KeyDown(object sender, WpfInput.KeyEventArgs e)
     {
         if (e.Key == WpfInput.Key.Enter)
@@ -491,8 +498,8 @@ public partial class MainWindow : Window
             var message = AIInputBox.Text;
             if (!string.IsNullOrWhiteSpace(message))
             {
-                _viewModel.SendAIMessage(message);
                 AIInputBox.Clear();
+                _viewModel.SendAIMessage(message);
             }
             ResetIdleTimer();
         }
