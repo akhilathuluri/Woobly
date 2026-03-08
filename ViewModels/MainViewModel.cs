@@ -19,6 +19,7 @@ namespace Woobly.ViewModels
         private readonly ClipboardService _clipboardService;
         private readonly StorageService _storageService;
         private readonly StartupService _startupService;
+        private readonly CallDetectionService _callDetectionService;
         private readonly DispatcherTimer _updateTimer;
         
         private bool _isExpanded;
@@ -27,12 +28,19 @@ namespace Woobly.ViewModels
         private MediaInfo _mediaInfo = new MediaInfo();
         private ObservableCollection<ChatMessage> _chatMessages = new ObservableCollection<ChatMessage>();
         private bool _isAIStreaming;
+        private CallInfo _activeCall = new CallInfo();
         private ObservableCollection<TaskItem> _tasks = new ObservableCollection<TaskItem>();
         private ObservableCollection<ClipboardItem> _clipboardItems = new ObservableCollection<ClipboardItem>();
         private AppSettings _settings = new AppSettings();
 
         /// <summary>Called by the view to scroll the chat to the bottom after each token.</summary>
         public Action? RequestScrollToBottom;
+
+        /// <summary>Called when a call is detected — view should expand the island.</summary>
+        public Action? OnCallStarted;
+
+        /// <summary>Called when a call ends — view should collapse the island.</summary>
+        public Action? OnCallEnded;
 
         public bool IsExpanded
         {
@@ -88,6 +96,12 @@ namespace Woobly.ViewModels
             set { _settings = value; OnPropertyChanged(); }
         }
 
+        public CallInfo ActiveCall
+        {
+            get => _activeCall;
+            set { _activeCall = value; OnPropertyChanged(); }
+        }
+
         public MainViewModel()
         {
             _systemMonitor = new SystemMonitorService();
@@ -96,6 +110,7 @@ namespace Woobly.ViewModels
             _mediaService = new MediaService();
             _storageService = new StorageService();
             _startupService = new StartupService();
+            _callDetectionService = new CallDetectionService();
 
             // Load settings and tasks
             Settings = _storageService.LoadSettings();
@@ -117,6 +132,16 @@ namespace Woobly.ViewModels
 
             // Subscribe to events
             _mediaService.MediaChanged += media => MediaInfo = media;
+            _callDetectionService.CallStarted += call =>
+            {
+                ActiveCall = call;
+                OnCallStarted?.Invoke();
+            };
+            _callDetectionService.CallEnded += () =>
+            {
+                ActiveCall = new CallInfo { IsActive = false };
+                OnCallEnded?.Invoke();
+            };
             _clipboardService.ClipboardChanged += items => 
             {
                 ClipboardItems.Clear();
@@ -206,6 +231,11 @@ namespace Woobly.ViewModels
         {
             ChatMessages.Clear();
             IsAIStreaming = false;
+        }
+
+        public void BringCallWindowToFront()
+        {
+            _callDetectionService.BringCallWindowToFront();
         }
 
         public void AddTask(string content)

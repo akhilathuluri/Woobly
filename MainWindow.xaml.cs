@@ -44,6 +44,8 @@ public partial class MainWindow : Window
             _viewModel = new MainViewModel();
             DataContext = _viewModel;
             _viewModel.RequestScrollToBottom = () => ChatScrollViewer?.ScrollToBottom();
+            _viewModel.OnCallStarted = () => { if (!_isExpanded) ExpandIsland(); };
+            _viewModel.OnCallEnded  = () => { if (_isExpanded) CollapseIsland(); };
 
             _pages = new UIElement[] { Page1, Page2, Page3, Page4, Page5, Page6 };
 
@@ -491,6 +493,12 @@ public partial class MainWindow : Window
         ResetIdleTimer();
     }
 
+    private void CallBanner_Click(object sender, WpfInput.MouseButtonEventArgs e)
+    {
+        // Bring the WhatsApp / Telegram call window to the foreground
+        _viewModel.BringCallWindowToFront();
+    }
+
     private void AIInputBox_KeyDown(object sender, WpfInput.KeyEventArgs e)
     {
         if (e.Key == WpfInput.Key.Enter)
@@ -628,7 +636,8 @@ public partial class MainWindow : Window
     protected override void OnDeactivated(EventArgs e)
     {
         base.OnDeactivated(e);
-        if (_isExpanded)
+        // Keep expanded during an active call — collapsing mid-call is jarring
+        if (_isExpanded && !_viewModel.ActiveCall.IsActive)
         {
             CollapseIsland();
         }

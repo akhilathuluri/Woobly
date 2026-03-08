@@ -983,6 +983,111 @@
                             </Ellipse.Effect>
                         </Ellipse>
                     </StackPanel>
+
+                    <!-- ═══ Call Overlay ══════════════════════════════════════════════════
+                         Covers the full expanded island when a WhatsApp / Telegram call
+                         is detected. Auto-shown/hidden by OnCallStarted / OnCallEnded.
+                    ──────────────────────────────────────────────────────────────────── -->
+                    <Grid Visibility="{Binding ActiveCall.IsActive, Converter={StaticResource BoolToVisibilityConverter}}"
+                          ClipToBounds="True">
+                        <Grid.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                <GradientStop Color="#F21A1A1A" Offset="0"/>
+                                <GradientStop Color="#F2141A14" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Grid.Background>
+
+                        <StackPanel VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Margin="24,0">
+
+                            <!-- Dot + app source row -->
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        Margin="0,0,0,10">
+                                <Ellipse Width="8" Height="8"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,8,0"
+                                         RenderTransformOrigin="0.5,0.5">
+                                    <Ellipse.Fill>
+                                        <SolidColorBrush Color="#34C759"/>
+                                    </Ellipse.Fill>
+                                    <Ellipse.RenderTransform>
+                                        <ScaleTransform x:Name="CallOverlayDotScale" ScaleX="1" ScaleY="1"/>
+                                    </Ellipse.RenderTransform>
+                                    <Ellipse.Triggers>
+                                        <EventTrigger RoutedEvent="Ellipse.Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever">
+                                                    <DoubleAnimation Storyboard.TargetName="CallOverlayDotScale"
+                                                                     Storyboard.TargetProperty="ScaleX"
+                                                                     From="1" To="1.7" Duration="0:0:0.8"
+                                                                     AutoReverse="True"/>
+                                                    <DoubleAnimation Storyboard.TargetName="CallOverlayDotScale"
+                                                                     Storyboard.TargetProperty="ScaleY"
+                                                                     From="1" To="1.7" Duration="0:0:0.8"
+                                                                     AutoReverse="True"/>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </Ellipse.Triggers>
+                                </Ellipse>
+                                <TextBlock Text="{Binding ActiveCall.AppSource}"
+                                           Foreground="#34C759"
+                                           FontFamily="Space Grotesk"
+                                           FontSize="11"
+                                           FontWeight="SemiBold"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+
+                            <!-- Contact name (shown when available) -->
+                            <TextBlock Text="{Binding ActiveCall.ContactName}"
+                                       Visibility="{Binding ActiveCall.ContactName, Converter={StaticResource StringNullOrEmptyToVisibilityConverter}}"
+                                       Foreground="{StaticResource PrimaryTextBrush}"
+                                       FontFamily="Space Grotesk"
+                                       FontSize="26"
+                                       FontWeight="Light"
+                                       HorizontalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       MaxWidth="360"
+                                       Margin="0,0,0,4"/>
+
+                            <!-- Fallback when no name could be extracted -->
+                            <TextBlock Text="Unknown"
+                                       Visibility="{Binding ActiveCall.ContactName, Converter={StaticResource InverseStringNullOrEmptyToVisibilityConverter}}"
+                                       Foreground="{StaticResource TertiaryTextBrush}"
+                                       FontFamily="Space Grotesk"
+                                       FontSize="26"
+                                       FontWeight="Light"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,4"/>
+
+                            <!-- Direction label -->
+                            <TextBlock Text="{Binding ActiveCall.DirectionLabel}"
+                                       Foreground="{StaticResource TertiaryTextBrush}"
+                                       FontFamily="Space Grotesk"
+                                       FontSize="12"
+                                       HorizontalAlignment="Center"
+                                       Margin="0,0,0,18"/>
+
+                            <!-- Open app button -->
+                            <Border Background="#22FFFFFF"
+                                    CornerRadius="10"
+                                    Padding="16,6"
+                                    HorizontalAlignment="Center"
+                                    Cursor="Hand"
+                                    MouseLeftButtonDown="CallBanner_Click">
+                                <TextBlock Text="Open app"
+                                           Foreground="{StaticResource SecondaryTextBrush}"
+                                           FontFamily="Space Grotesk"
+                                           FontSize="11"
+                                           HorizontalAlignment="Center"/>
+                            </Border>
+
+                        </StackPanel>
+                    </Grid>
+                    <!-- ─────────────────────────────────────────────────────────────── -->
+
                 </Grid>
             </Grid>
         </Border>
