@@ -25,7 +25,7 @@
         <converters:PageIndexToBrushConverter x:Key="PageIndexToBrushConverter"/>
     </Window.Resources>
     
-    <Grid x:Name="RootGrid" RenderTransformOrigin="0.5,0">
+    <Grid x:Name="RootGrid" RenderTransformOrigin="0.5,0" CacheMode="BitmapCache">
         <Grid.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="IslandScaleTransform" ScaleX="0.375" ScaleY="0.2"/>

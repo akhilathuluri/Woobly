@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Threading;
@@ -36,6 +37,18 @@ namespace Woobly.Services
         private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
         private const int SW_RESTORE = 9;
 
+        [DllImport("user32.dll")]
+        private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
+
+        [DllImport("user32.dll")]
+        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct RECT { public int Left, Top, Right, Bottom; }
+
+        private const int GWL_EXSTYLE   = -20;
+        private const int WS_EX_TOPMOST = 0x00000008;
+
         // ── App patterns ─────────────────────────────────────────────────────
 
         // Process names to monitor (lowercase, no .exe extension)
@@ -48,18 +61,28 @@ namespace Woobly.Services
             "voice call", "video call", "audio call",
             "calling", "ringing",
             "call with",                    // Telegram active-call window
-            "active call", "on a call"
+            "active call", "on a call",
+            "whatsapp.root"                 // WhatsApp call overlay window
         };
 
         // Keywords that indicate an outgoing call
         private static readonly string[] OutgoingKeywords = { "calling", "outgoing" };
 
         // Keywords that indicate an incoming call
-        private static readonly string[] IncomingKeywords = { "incoming", "ringing" };
+        private static readonly string[] IncomingKeywords = { "incoming", "ringing", "whatsapp.root" };
 
         // ── State ─────────────────────────────────────────────────────────────
         private readonly DispatcherTimer _timer;
         private CallInfo? _lastCall;
+        // Per-app previously-seen window handles — used to spot brand-new popup windows
+        private readonly Dictionary<string, HashSet<IntPtr>> _knownHandles = new();
+
+        // Once a call window is identified, we persist it by handle so every poll just
+        // calls IsWindowVisible() rather than re-running the "is it new?" Signal 2 logic.
+        // This is the fix for Telegram whose call popup has no call keyword in its title.
+        private IntPtr _trackedCallHandle  = IntPtr.Zero;
+        private string _trackedCallContact = "";
+        private string _trackedCallApp     = "";
 
         // ── Events ────────────────────────────────────────────────────────────
         public event Action<CallInfo>? CallStarted;
@@ -117,10 +140,8 @@ namespace Woobly.Services
 
         private CallInfo? TryScanWindows()
         {
-            // Collect PIDs for watched processes
-            var watchedPids = new HashSet<uint>();
-            var processLookup = new Dictionary<uint, string>(); // pid → app label
-
+            // Build pid → app-label map
+            var watchedPids = new Dictionary<uint, string>();
             foreach (var proc in System.Diagnostics.Process.GetProcesses())
             {
                 try
@@ -130,54 +151,145 @@ namespace Woobly.Services
                     {
                         if (name.Contains(watched))
                         {
-                            watchedPids.Add((uint)proc.Id);
-                            processLookup[(uint)proc.Id] = ToProperName(watched);
+                            watchedPids[(uint)proc.Id] = ToProperName(watched);
                             break;
                         }
                     }
                 }
                 catch { /* process may have exited */ }
             }
+            if (watchedPids.Count == 0)
+            {
+                _trackedCallHandle = IntPtr.Zero; // watched app exited
+                return null;
+            }
 
-            if (watchedPids.Count == 0) return null;
+            // Seed baseline handles for apps currently in background (no visible windows).
+            // Ensures prevHandles is non-null on the very next poll so a new popup
+            // is detected as "new" even when Telegram was sitting in the system tray.
+            foreach (var appLabel in watchedPids.Values.Distinct())
+                if (!_knownHandles.ContainsKey(appLabel))
+                    _knownHandles[appLabel] = new HashSet<IntPtr>();
 
-            // Enumerate all visible windows looking for call titles
-            CallInfo? found = null;
+            // ── Persistence: if we already know the call window, just verify it ─────────
+            // This is the KEY FIX: Signal 2 (new-window) fires ONCE on the first poll.
+            // Without persistence, Telegram's "My Number2" window enters _knownHandles →
+            // Signal 2 never fires again → TryScanWindows returns null → CallEnded 1.2 s later.
+            if (_trackedCallHandle != IntPtr.Zero)
+            {
+                if (IsWindowVisible(_trackedCallHandle))
+                {
+                    return new CallInfo
+                    {
+                        IsActive     = true,
+                        ContactName  = _trackedCallContact,
+                        AppSource    = _trackedCallApp,
+                        Direction    = CallDirection.Incoming,
+                        WindowHandle = _trackedCallHandle
+                    };
+                }
+                // Call window closed — clear and fall through to fresh detection
+                _trackedCallHandle  = IntPtr.Zero;
+                _trackedCallContact = "";
+                _trackedCallApp     = "";
+            }
 
+            // Collect ALL visible windows per app
+            var appWindows = new Dictionary<string, List<(IntPtr hWnd, string title)>>();
             EnumWindows((hWnd, _) =>
             {
                 if (!IsWindowVisible(hWnd)) return true;
-
                 GetWindowThreadProcessId(hWnd, out uint pid);
-                if (!watchedPids.Contains(pid)) return true;
-
+                if (!watchedPids.TryGetValue(pid, out var app)) return true;
                 var sb = new StringBuilder(512);
-                GetWindowText(hWnd, sb, sb.Capacity);
+                GetWindowText(hWnd, sb, 512);
                 var title = sb.ToString().Trim();
                 if (string.IsNullOrEmpty(title)) return true;
-
-                var lower = title.ToLowerInvariant();
-                foreach (var kw in CallKeywords)
-                {
-                    if (lower.Contains(kw))
-                    {
-                        found = BuildCallInfo(
-                            windowTitle: title,
-                            lowerTitle: lower,
-                            appSource: processLookup[pid],
-                            handle: hWnd);
-                        return false; // stop enumeration
-                    }
-                }
-
-                return true; // continue
+                if (!appWindows.TryGetValue(app, out var lst))
+                    appWindows[app] = lst = new();
+                lst.Add((hWnd, title));
+                return true;
             }, IntPtr.Zero);
 
-            return found;
+            foreach (var (appName, windows) in appWindows)
+            {
+                _knownHandles.TryGetValue(appName, out var prevHandles);
+                _knownHandles[appName] = new HashSet<IntPtr>(windows.Select(w => w.hWnd));
+
+                // Signal 1: any window title contains a known call keyword
+                // e.g. WhatsApp → "WhatsApp.Root",  generic → "Voice call | Telegram"
+                foreach (var (h, t) in windows)
+                {
+                    if (!CallKeywords.Any(k => t.ToLowerInvariant().Contains(k))) continue;
+
+                    // Try to find a contact name from any window of this app
+                    var contact = "";
+                    foreach (var (_, t2) in windows)
+                    {
+                        contact = ExtractContactName(t2, t2.ToLowerInvariant(), appName);
+                        if (!string.IsNullOrEmpty(contact)) break;
+                    }
+
+                    _trackedCallHandle  = h;
+                    _trackedCallContact = contact;
+                    _trackedCallApp     = appName;
+                    return new CallInfo
+                    {
+                        IsActive     = true,
+                        ContactName  = contact,
+                        AppSource    = appName,
+                        Direction    = DetectDirection(t.ToLowerInvariant()),
+                        WindowHandle = h
+                    };
+                }
+
+                // Signal 2: brand-new popup window with no call keyword in its title.
+                // This is how Telegram's ringing notification is detected:
+                //   idle → tray (no windows), call arrives → new window titled "My Number2"
+                if (prevHandles == null) continue;
+                foreach (var (h, t) in windows)
+                {
+                    if (prevHandles.Contains(h)) continue;         // not a new window
+                    if (!IsLikelyCallPopup(h, t, appName)) continue;
+
+                    // Window title IS the contact name for Telegram
+                    _trackedCallHandle  = h;
+                    _trackedCallContact = t;
+                    _trackedCallApp     = appName;
+                    return new CallInfo
+                    {
+                        IsActive     = true,
+                        ContactName  = t,
+                        AppSource    = appName,
+                        Direction    = CallDirection.Incoming,
+                        WindowHandle = h
+                    };
+                }
+            }
+            return null;
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
+        /// <summary>
+        /// Returns true when a newly-appeared window looks like a call notification popup
+        /// (small size + TOPMOST style) rather than the normal app main window.
+        /// Used for apps like Telegram whose call popups don't contain call keywords.
+        /// </summary>
+        private static bool IsLikelyCallPopup(IntPtr hWnd, string title, string appName)
+        {
+            if (title.Length < 2) return false;
 
+            // Reject the main app window — its title will equal or contain the app name
+            if (title.Equals(appName, StringComparison.OrdinalIgnoreCase)) return false;
+            if (title.ToLowerInvariant().Contains(appName.ToLowerInvariant())) return false;
+
+            // Reject windows whose title already fired Signal 1 (handled by keyword path)
+            if (CallKeywords.Any(k => title.ToLowerInvariant().Contains(k))) return false;
+
+            // Must have actual pixel dimensions (eliminates zero-size ghost handles)
+            GetWindowRect(hWnd, out RECT r);
+            return r.Right - r.Left > 20 && r.Bottom - r.Top > 20;
+        }
         private static CallInfo BuildCallInfo(
             string windowTitle, string lowerTitle, string appSource, IntPtr handle)
         {
@@ -224,7 +336,16 @@ namespace Woobly.Services
                 "incoming voice call", "incoming video call", "incoming call",
                 "incoming voice", "incoming video", "voice call", "video call",
                 "audio call", "call with", "calling...", "calling", "ringing",
-                "active call", "on a call", appSource.ToLowerInvariant()
+                "active call", "on a call",
+                "whatsapp.root",            // WhatsApp call overlay window chrome
+                appSource.ToLowerInvariant()
+            };
+
+            // Single-word technical fragments that appear in window titles but are never
+            // contact names (e.g. "WhatsApp.Root" → strips to "root" → reject).
+            string[] techFragments = {
+                "root", "app", "main", "host", "gpu", "manager",
+                "worker", "webview", "utility", "service", "broker", "crashpad"
             };
 
             foreach (var part in parts)
@@ -236,9 +357,10 @@ namespace Woobly.Services
                 candidate = candidate.Trim(' ', '-', '|', '\u2013', '\u2014', '\u00b7', '\u2022', '.', '(', ')', '[', ']');
                 candidate = System.Text.RegularExpressions.Regex.Replace(candidate, @"\s{2,}", " ").Trim();
 
-                // Must be at least 2 chars and not just the app name again
+                // Must be at least 2 chars and not just the app name or a tech fragment
                 if (candidate.Length < 2 ||
-                    candidate.Equals(appSource.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase))
+                    candidate.Equals(appSource.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase) ||
+                    techFragments.Any(f => candidate.Equals(f, StringComparison.OrdinalIgnoreCase)))
                     continue;
 
                 // Re-case from the original title for proper capitalisation
