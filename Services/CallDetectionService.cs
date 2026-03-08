@@ -43,6 +43,9 @@ namespace Woobly.Services
         [DllImport("user32.dll")]
         private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
 
+        [DllImport("user32.dll")]
+        private static extern bool EnumChildWindows(IntPtr hWndParent, EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
         [StructLayout(LayoutKind.Sequential)]
         private struct RECT { public int Left, Top, Right, Bottom; }
 
@@ -76,10 +79,11 @@ namespace Woobly.Services
         private CallInfo? _lastCall;
         // Per-app previously-seen window handles — used to spot brand-new popup windows
         private readonly Dictionary<string, HashSet<IntPtr>> _knownHandles = new();
+        // Captured dispatcher so background tasks can marshal events back to the UI thread
+        private readonly Dispatcher _dispatcher;
 
-        // Once a call window is identified, we persist it by handle so every poll just
-        // calls IsWindowVisible() rather than re-running the "is it new?" Signal 2 logic.
-        // This is the fix for Telegram whose call popup has no call keyword in its title.
+        // Once a call window is identified, persist it by handle so every poll just
+        // calls IsWindowVisible() rather than re-running the "is it new?" logic.
         private IntPtr _trackedCallHandle  = IntPtr.Zero;
         private string _trackedCallContact = "";
         private string _trackedCallApp     = "";
@@ -87,9 +91,16 @@ namespace Woobly.Services
         // ── Events ────────────────────────────────────────────────────────────
         public event Action<CallInfo>? CallStarted;
         public event Action? CallEnded;
+        /// <summary>
+        /// Fires when a contact name is resolved asynchronously (e.g. via UI Automation
+        /// for WhatsApp Desktop which doesn't expose names in Win32 window titles).
+        /// Always raised on the UI/dispatcher thread.
+        /// </summary>
+        public event Action<string>? ContactNameResolved;
 
         public CallDetectionService()
         {
+            _dispatcher = Dispatcher.CurrentDispatcher;
             _timer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(1200)
@@ -233,6 +244,18 @@ namespace Woobly.Services
                     _trackedCallHandle  = h;
                     _trackedCallContact = contact;
                     _trackedCallApp     = appName;
+
+                    // WhatsApp Desktop never puts contact names in Win32 window titles.
+                    // Kick off an async scan via child-window text + UI Automation so we
+                    // can update the contact name once the accessibility tree is ready.
+                    if (string.IsNullOrEmpty(contact))
+                    {
+                        var capturedHandle  = h;
+                        var capturedWindows = windows.Select(w => w.hWnd).ToList();
+                        var capturedApp     = appName;
+                        _ = Task.Run(() => ResolveContactAsync(capturedHandle, capturedWindows, capturedApp));
+                    }
+
                     return new CallInfo
                     {
                         IsActive     = true,
@@ -270,6 +293,135 @@ namespace Woobly.Services
         }
 
         // ── Helpers ───────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Called on a background thread when a call is detected but no contact name
+        /// was found in Win32 window titles (typical for WhatsApp Desktop / WebView2).
+        /// Tries two strategies in order:
+        ///   1. EnumChildWindows — instant, works when child hwnd text is accessible.
+        ///   2. UI Automation tree walk — reads WebView2 accessibility tree content.
+        /// When a name is found, updates _trackedCallContact and fires ContactNameResolved
+        /// on the UI dispatcher thread so XAML bindings update automatically.
+        /// </summary>
+        private void ResolveContactAsync(IntPtr callHandle, List<IntPtr> allHandles, string appName)
+        {
+            // Small delay so the call overlay has time to fully render
+            System.Threading.Thread.Sleep(600);
+
+            // Strategy 1: child-window GetWindowText (fast, works for some apps)
+            var name = "";
+            foreach (var h in allHandles)
+            {
+                name = GetContactFromChildWindows(h, appName);
+                if (!string.IsNullOrEmpty(name)) break;
+            }
+
+            // Strategy 2: UI Automation accessibility tree (handles WebView2 content)
+            if (string.IsNullOrEmpty(name))
+                name = GetContactViaUIA(callHandle, appName);
+
+            if (string.IsNullOrEmpty(name)) return;
+
+            // Update the persisted contact and notify subscribers on the UI thread
+            _trackedCallContact = name;
+            _dispatcher.BeginInvoke(() => ContactNameResolved?.Invoke(name));
+        }
+
+        /// <summary>Scans child window texts looking for a contact name.</summary>
+        private static string GetContactFromChildWindows(IntPtr hWnd, string appName)
+        {
+            // Known internal window titles to skip immediately
+            var internalPrefixes = new[] {
+                "non client", "non-client", "corewindow", "webview",
+                "reunioncaption", "reunionwindowing", "applicationframe",
+                "appwindow", "custom title",
+                "microsoft edge", "chromium", "gpu", "storage", "network",
+                "service worker", "runtime broker", "crashpad"
+            };
+
+            var texts = new List<string>();
+            EnumChildWindows(hWnd, (child, _) =>
+            {
+                var sb = new StringBuilder(256);
+                GetWindowText(child, sb, 256);
+                var text = sb.ToString().Trim();
+                if (text.Length < 2) return true;
+                var lower = text.ToLowerInvariant();
+                if (internalPrefixes.Any(p => lower.StartsWith(p))) return true; // skip chrome
+                texts.Add(text);
+                return true;
+            }, IntPtr.Zero);
+
+            foreach (var text in texts)
+            {
+                var contact = ExtractContactName(text, text.ToLowerInvariant(), appName);
+                if (!string.IsNullOrEmpty(contact)) return contact;
+            }
+            return "";
+        }
+
+        /// <summary>
+        /// Walks the UI Automation content tree up to 300 nodes, returning the first
+        /// accessible name that looks like a contact name. Uses ContentViewWalker to
+        /// skip non-content (chrome/layout) elements for speed on WebView2 apps.
+        /// </summary>
+        private static string GetContactViaUIA(IntPtr handle, string appName)
+        {
+            try
+            {
+                var root = System.Windows.Automation.AutomationElement.FromHandle(handle);
+                if (root == null) return "";
+                var counter = new[] { 0 };
+                return WalkUIA(root, appName, 0, counter);
+            }
+            catch { return ""; }
+        }
+
+        private static readonly HashSet<string> UiControlNames = new(StringComparer.OrdinalIgnoreCase)
+        {
+            // Window chrome
+            "minimize", "maximize", "restore", "close", "snap",
+            // Navigation
+            "back", "forward", "home", "refresh", "reload",
+            // Common actions
+            "search", "settings", "menu", "more", "options",
+            "accept", "decline", "cancel", "ok", "yes", "no",
+            "mute", "unmute", "video", "audio", "speaker",
+            "end call", "end", "hang up",
+            // Generic UI labels
+            "button", "toolbar", "statusbar", "titlebar", "tab",
+            "scroll", "pane", "panel", "sidebar", "header", "footer"
+        };
+
+        private static string WalkUIA(
+            System.Windows.Automation.AutomationElement el,
+            string appName, int depth, int[] counter)
+        {
+            if (depth > 15 || counter[0] > 300) return "";
+            counter[0]++;
+            try
+            {
+                var nodeName = el.Current.Name?.Trim();
+                if (!string.IsNullOrEmpty(nodeName) && nodeName.Length is >= 2 and <= 100
+                    && !UiControlNames.Contains(nodeName))
+                {
+                    var contact = ExtractContactName(nodeName, nodeName.ToLowerInvariant(), appName);
+                    if (!string.IsNullOrEmpty(contact)) return contact;
+                }
+
+                var walker = System.Windows.Automation.TreeWalker.ContentViewWalker;
+                var child  = walker.GetFirstChild(el);
+                while (child != null)
+                {
+                    var found = WalkUIA(child, appName, depth + 1, counter);
+                    if (!string.IsNullOrEmpty(found)) return found;
+                    child = walker.GetNextSibling(child);
+                }
+            }
+            catch { }
+            return "";
+        }
+
         /// <summary>
         /// Returns true when a newly-appeared window looks like a call notification popup
         /// (small size + TOPMOST style) rather than the normal app main window.
@@ -319,6 +471,29 @@ namespace Woobly.Services
 
         private static string ExtractContactName(string title, string lower, string appSource)
         {
+            // Reject known UI control / button names — these come from the UIA tree
+            // and are never contact names (e.g. "Minimize", "Close", "Mute").
+            if (UiControlNames.Contains(title.Trim()))
+                return string.Empty;
+
+            // Titles that are 100% known Windows/WebView2 internal chrome — never a contact.
+            string[] knownInternalTitles = {
+                "non client input sink window", "non-client input sink",
+                "corewindow", "applicationframewindow",
+                "reunioncaptioncontrolswindow", "reunionwindowingcaptioncontrols",
+                "appwindow custom title", "appwindow", "custom title bar",
+                "microsoft edge", "chromium", "webview2",
+                "storage partition", "storage notification",
+                "network notification", "network partition",
+                "service worker", "gpu process", "gpu",
+                "runtime broker", "crashpad", "handler",
+                "utility", "browser"
+            };
+            if (knownInternalTitles.Any(bad =>
+                lower.Equals(bad, StringComparison.OrdinalIgnoreCase) ||
+                lower.StartsWith(bad, StringComparison.OrdinalIgnoreCase)))
+                return string.Empty;
+
             // Split on common window-title separators so each segment is evaluated independently.
             // e.g. "Voice call | WhatsApp" → ["Voice call ", " WhatsApp"]
             // This prevents the app name leaking into the contact candidate.
@@ -345,7 +520,11 @@ namespace Woobly.Services
             // contact names (e.g. "WhatsApp.Root" → strips to "root" → reject).
             string[] techFragments = {
                 "root", "app", "main", "host", "gpu", "manager",
-                "worker", "webview", "utility", "service", "broker", "crashpad"
+                "worker", "webview", "utility", "service", "broker", "crashpad",
+                "sink", "client", "input", "window", "handler", "process",
+                "partition", "notification", "storage", "network", "browser",
+                "reunion", "caption", "controls", "frame", "hosting",
+                "custom", "title", "bar", "titlebar"
             };
 
             foreach (var part in parts)
@@ -357,10 +536,12 @@ namespace Woobly.Services
                 candidate = candidate.Trim(' ', '-', '|', '\u2013', '\u2014', '\u00b7', '\u2022', '.', '(', ')', '[', ']');
                 candidate = System.Text.RegularExpressions.Regex.Replace(candidate, @"\s{2,}", " ").Trim();
 
-                // Must be at least 2 chars and not just the app name or a tech fragment
+                // Reject if empty, equals app name, is a single tech fragment, or
+                // contains only tech-fragment words (e.g. "non client input sink")
                 if (candidate.Length < 2 ||
                     candidate.Equals(appSource.ToLowerInvariant(), StringComparison.OrdinalIgnoreCase) ||
-                    techFragments.Any(f => candidate.Equals(f, StringComparison.OrdinalIgnoreCase)))
+                    techFragments.Any(f => candidate.Equals(f, StringComparison.OrdinalIgnoreCase)) ||
+                    candidate.Split(' ').All(w => techFragments.Contains(w.ToLowerInvariant())))
                     continue;
 
                 // Re-case from the original title for proper capitalisation

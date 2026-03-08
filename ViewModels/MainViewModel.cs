@@ -142,6 +142,14 @@ namespace Woobly.ViewModels
                 ActiveCall = new CallInfo { IsActive = false };
                 OnCallEnded?.Invoke();
             };
+            // ContactName resolved asynchronously (e.g. via UIA for WhatsApp Desktop).
+            // Since CallInfo implements INotifyPropertyChanged and ContactName has a setter,
+            // simply writing to ActiveCall.ContactName updates the XAML binding live.
+            _callDetectionService.ContactNameResolved += name =>
+            {
+                if (ActiveCall.IsActive)
+                    ActiveCall.ContactName = name;
+            };
             _clipboardService.ClipboardChanged += items => 
             {
                 ClipboardItems.Clear();
