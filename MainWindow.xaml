@@ -72,32 +72,61 @@
                   ManipulationDelta="ContentGrid_ManipulationDelta"
                   PreviewMouseWheel="ContentGrid_PreviewMouseWheel">
                 <!-- Collapsed State Content -->
-                <StackPanel x:Name="CollapsedContent" 
-                           Orientation="Horizontal"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           Margin="10,0"
-                           Opacity="1"
-                           RenderTransformOrigin="0.5,0.5">
-                    <StackPanel.RenderTransform>
+                <Grid x:Name="CollapsedContent"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"
+                      Opacity="1"
+                      RenderTransformOrigin="0.5,0.5">
+                    <Grid.RenderTransform>
                         <ScaleTransform x:Name="CollapsedContentScale" ScaleX="2.667" ScaleY="5.0"/>
-                    </StackPanel.RenderTransform>
-                    <TextBlock Text="{Binding SystemInfo.FormattedTime}"
-                              Foreground="{StaticResource PrimaryTextBrush}"
-                              FontFamily="Space Grotesk"
-                              FontSize="13"
-                              FontWeight="SemiBold"
-                              Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°}"
-                              Foreground="{StaticResource SecondaryTextBrush}"
-                              FontFamily="Space Grotesk"
-                              FontSize="13"
-                              Margin="0,0,10,0"/>
-                    <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
-                              Foreground="{StaticResource SecondaryTextBrush}"
-                              FontFamily="Space Grotesk"
-                              FontSize="13"/>
-                </StackPanel>
+                    </Grid.RenderTransform>
+
+                    <!-- Normal info row: time · temp · battery -->
+                    <StackPanel x:Name="CollapsedNormalContent"
+                               Orientation="Horizontal"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Margin="10,0">
+                        <TextBlock Text="{Binding SystemInfo.FormattedTime}"
+                                  Foreground="{StaticResource PrimaryTextBrush}"
+                                  FontFamily="Space Grotesk"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding SystemInfo.Temperature, StringFormat={}{0:0}°}"
+                                  Foreground="{StaticResource SecondaryTextBrush}"
+                                  FontFamily="Space Grotesk"
+                                  FontSize="13"
+                                  Margin="0,0,10,0"/>
+                        <TextBlock Text="{Binding SystemInfo.BatteryPercentage, StringFormat={}{0}%}"
+                                  Foreground="{StaticResource SecondaryTextBrush}"
+                                  FontFamily="Space Grotesk"
+                                  FontSize="13"/>
+                    </StackPanel>
+
+                    <!-- Transient battery notification row (shown briefly on battery events) -->
+                    <StackPanel x:Name="CollapsedNotificationContent"
+                               Orientation="Horizontal"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Margin="10,0"
+                               Opacity="0"
+                               Visibility="Collapsed">
+                        <TextBlock x:Name="NotificationIconText"
+                                  Text=""
+                                  FontFamily="Segoe UI"
+                                  FontSize="11"
+                                  VerticalAlignment="Center"
+                                  Foreground="{StaticResource PrimaryTextBrush}"
+                                  Margin="0,0,5,0"/>
+                        <TextBlock x:Name="NotificationMessageText"
+                                  Text=""
+                                  FontFamily="Space Grotesk"
+                                  FontSize="13"
+                                  FontWeight="SemiBold"
+                                  Foreground="{StaticResource PrimaryTextBrush}"/>
+                    </StackPanel>
+                </Grid>
                 
                 <!-- Expanded State Content -->
                 <Grid x:Name="ExpandedContent" Visibility="Collapsed" Opacity="0">

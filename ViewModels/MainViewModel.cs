@@ -20,6 +20,7 @@ namespace Woobly.ViewModels
         private readonly StorageService _storageService;
         private readonly StartupService _startupService;
         private readonly CallDetectionService _callDetectionService;
+        private readonly BatteryNotificationService _batteryNotificationService;
         private readonly DispatcherTimer _updateTimer;
         
         private bool _isExpanded;
@@ -41,6 +42,9 @@ namespace Woobly.ViewModels
 
         /// <summary>Called when a call ends — view should collapse the island.</summary>
         public Action? OnCallEnded;
+
+        /// <summary>Called with (icon, message) when a battery event occurs — view should show a transient notification.</summary>
+        public Action<string, string>? OnBatteryNotification;
 
         public bool IsExpanded
         {
@@ -111,6 +115,8 @@ namespace Woobly.ViewModels
             _storageService = new StorageService();
             _startupService = new StartupService();
             _callDetectionService = new CallDetectionService();
+            _batteryNotificationService = new BatteryNotificationService();
+            _batteryNotificationService.NotificationTriggered += (icon, msg) => OnBatteryNotification?.Invoke(icon, msg);
 
             // Load settings and tasks
             Settings = _storageService.LoadSettings();
@@ -167,6 +173,7 @@ namespace Woobly.ViewModels
         {
             _systemMonitor.UpdateSystemInfo(SystemInfo);
             OnPropertyChanged(nameof(SystemInfo));
+            _batteryNotificationService.Check(SystemInfo.BatteryPercentage, SystemInfo.IsCharging);
             
             // Update weather every 5 minutes
             if (DateTime.Now.Second == 0 && DateTime.Now.Minute % 5 == 0)

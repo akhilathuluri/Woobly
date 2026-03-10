@@ -22,6 +22,7 @@ public partial class MainWindow : Window
     private bool _isDragging;
     private bool _gestureHandled;
     private DispatcherTimer _idleTimer;
+    private DispatcherTimer? _batteryNotifDismissTimer;
     private readonly UIElement[] _pages;
     private readonly WinForms.NotifyIcon _notifyIcon;
     private bool _isExiting;
@@ -46,6 +47,7 @@ public partial class MainWindow : Window
             _viewModel.RequestScrollToBottom = () => ChatScrollViewer?.ScrollToBottom();
             _viewModel.OnCallStarted = () => { if (!_isExpanded) ExpandIsland(); };
             _viewModel.OnCallEnded  = () => { if (_isExpanded) CollapseIsland(); };
+            _viewModel.OnBatteryNotification = (icon, msg) => ShowBatteryNotification(icon, msg);
 
             _pages = new UIElement[] { Page1, Page2, Page3, Page4, Page5, Page6 };
 
@@ -144,6 +146,77 @@ public partial class MainWindow : Window
         _isExpanded = false;
     }
 
+    // ── Battery notification helpers ──────────────────────────────────────────
+
+    /// <summary>
+    /// Shows a transient notification in the collapsed pill (e.g. "⚡ Charging · 82%").
+    /// The notification fades in, stays for 3.5 s, then fades back to normal content.
+    /// Silently ignored when the island is expanded.
+    /// </summary>
+    private void ShowBatteryNotification(string icon, string text)
+    {
+        if (_isExpanded) return;
+
+        NotificationIconText.Text = icon;
+        NotificationMessageText.Text = text;
+
+        // Restart dismiss timer so rapid events extend the display window
+        _batteryNotifDismissTimer?.Stop();
+        _batteryNotifDismissTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(3.5) };
+        _batteryNotifDismissTimer.Tick += (_, __) => DismissBatteryNotification();
+        _batteryNotifDismissTimer.Start();
+
+        // Only animate if not already in notification state
+        if (CollapsedNotificationContent.Visibility == Visibility.Visible)
+        {
+            // Already showing — just updated the text, no fade needed
+            return;
+        }
+
+        CollapsedNotificationContent.Visibility = Visibility.Visible;
+
+        var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = TimeSpan.FromSeconds(0.2) };
+        var fadeIn  = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromSeconds(0.2) };
+        fadeOut.Completed += (_, __) => CollapsedNormalContent.Visibility = Visibility.Collapsed;
+
+        CollapsedNormalContent.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        CollapsedNotificationContent.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+    }
+
+    private void DismissBatteryNotification()
+    {
+        _batteryNotifDismissTimer?.Stop();
+
+        if (_isExpanded)
+        {
+            // Island is expanded — silently reset so collapsed mode is clean on next collapse
+            ResetBatteryNotificationState();
+            return;
+        }
+
+        CollapsedNormalContent.Visibility = Visibility.Visible;
+
+        var fadeOut = new DoubleAnimation { From = 1, To = 0, Duration = TimeSpan.FromSeconds(0.2) };
+        var fadeIn  = new DoubleAnimation { From = 0, To = 1, Duration = TimeSpan.FromSeconds(0.2) };
+        fadeOut.Completed += (_, __) =>
+        {
+            CollapsedNotificationContent.Visibility = Visibility.Collapsed;
+            CollapsedNotificationContent.Opacity = 0;
+        };
+
+        CollapsedNotificationContent.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+        CollapsedNormalContent.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+    }
+
+    private void ResetBatteryNotificationState()
+    {
+        _batteryNotifDismissTimer?.Stop();
+        CollapsedNotificationContent.Visibility = Visibility.Collapsed;
+        CollapsedNotificationContent.Opacity = 0;
+        CollapsedNormalContent.Visibility = Visibility.Visible;
+        CollapsedNormalContent.Opacity = 1;
+    }
+
     private void Window_MouseDown(object sender, WpfInput.MouseButtonEventArgs e)
     {
         if (e.LeftButton == WpfInput.MouseButtonState.Pressed && !_isExpanded)
@@ -157,6 +230,7 @@ public partial class MainWindow : Window
     private void ExpandIsland()
     {
         if (_isExpanded) return;
+        _batteryNotifDismissTimer?.Stop();
         
         _isExpanded = true;
         _viewModel.IsExpanded = true;
@@ -285,6 +359,7 @@ public partial class MainWindow : Window
         {
             ExpandedContent.Visibility = Visibility.Collapsed;
             CollapsedContent.Visibility = Visibility.Visible;
+            ResetBatteryNotificationState();
             
             // Fade in collapsed content
             var fadeInAnim = new DoubleAnimation
