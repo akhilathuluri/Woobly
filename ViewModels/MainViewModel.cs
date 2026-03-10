@@ -21,6 +21,7 @@ namespace Woobly.ViewModels
         private readonly StartupService _startupService;
         private readonly CallDetectionService _callDetectionService;
         private readonly BatteryNotificationService _batteryNotificationService;
+        private readonly BluetoothNotificationService _bluetoothNotificationService;
         private readonly DispatcherTimer _updateTimer;
         
         private bool _isExpanded;
@@ -117,6 +118,11 @@ namespace Woobly.ViewModels
             _callDetectionService = new CallDetectionService();
             _batteryNotificationService = new BatteryNotificationService();
             _batteryNotificationService.NotificationTriggered += (icon, msg) => OnBatteryNotification?.Invoke(icon, msg);
+
+            _bluetoothNotificationService = new BluetoothNotificationService(System.Windows.Threading.Dispatcher.CurrentDispatcher);
+            _bluetoothNotificationService.DeviceConnected    += name => OnBatteryNotification?.Invoke("\uE702", $"{name} Connected");
+            _bluetoothNotificationService.DeviceDisconnected += name => OnBatteryNotification?.Invoke("\uE702", $"{name} Disconnected");
+            _bluetoothNotificationService.Start();
 
             // Load settings and tasks
             Settings = _storageService.LoadSettings();
@@ -313,6 +319,12 @@ namespace Woobly.ViewModels
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        public void Dispose()
+        {
+            _updateTimer.Stop();
+            _bluetoothNotificationService.Dispose();
         }
     }
 }

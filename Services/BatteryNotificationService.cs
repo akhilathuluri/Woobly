@@ -37,13 +37,13 @@ namespace Woobly.Services
 
                 if (isCharging)
                 {
-                    NotificationTriggered?.Invoke("⚡", $"Charging · {batteryPercent}%");
+                    NotificationTriggered?.Invoke("\uE83E", $"Charging \u00B7 {batteryPercent}%");
                     // Clear thresholds so user gets fresh low-battery alerts next discharge
                     _alertedThresholds.Clear();
                 }
                 else
                 {
-                    NotificationTriggered?.Invoke("🔌", $"Unplugged · {batteryPercent}%");
+                    NotificationTriggered?.Invoke("\uE996", $"Unplugged \u00B7 {batteryPercent}%");
                     // Pre-mark thresholds already crossed so we don't spam them on next tick
                     foreach (var t in Thresholds)
                         if (batteryPercent <= t)

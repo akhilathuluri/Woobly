@@ -663,6 +663,7 @@ public partial class MainWindow : Window
             // Ignore disposal errors
         }
 
+        _viewModel.Dispose();
         System.Windows.Application.Current.Shutdown();
     }
 

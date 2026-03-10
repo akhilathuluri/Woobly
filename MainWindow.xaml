@@ -114,16 +114,18 @@
                                Visibility="Collapsed">
                         <TextBlock x:Name="NotificationIconText"
                                   Text=""
-                                  FontFamily="Segoe UI"
-                                  FontSize="11"
+                                  FontFamily="Segoe MDL2 Assets"
+                                  FontSize="12"
                                   VerticalAlignment="Center"
-                                  Foreground="{StaticResource PrimaryTextBrush}"
-                                  Margin="0,0,5,0"/>
+                                  Foreground="#2D9CDB"
+                                  Margin="0,0,6,0"/>
                         <TextBlock x:Name="NotificationMessageText"
                                   Text=""
                                   FontFamily="Space Grotesk"
                                   FontSize="13"
                                   FontWeight="SemiBold"
+                                  MaxWidth="110"
+                                  TextTrimming="CharacterEllipsis"
                                   Foreground="{StaticResource PrimaryTextBrush}"/>
                     </StackPanel>
                 </Grid>
