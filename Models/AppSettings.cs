@@ -15,6 +15,9 @@ namespace Woobly.Models
         public string City { get; set; } = "London";
         public int ClipboardHistoryLimit { get; set; } = 2;
         public bool RunOnStartup { get; set; } = false;
+        public bool HasCompletedPrivacyConsent { get; set; } = false;
+        public bool EnableClipboardMonitoring { get; set; } = false;
+        public bool EnableCallMonitoring { get; set; } = false;
         
         public double IslandWidth { get; set; } = 150;
         public double IslandHeight { get; set; } = 40;

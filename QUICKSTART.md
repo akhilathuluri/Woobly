@@ -1,4 +1,4 @@
-# Floating Island - Quick Start Guide
+# Woobly - Quick Start Guide
 
 ## Prerequisites
 - Windows 10/11
@@ -25,7 +25,7 @@
 ### Step 3: Build & Run
 ```powershell
 # Navigate to project folder
-cd e:\island\FloatingIsland
+cd e:\Woobly
 
 # Build the project
 dotnet build
@@ -41,15 +41,25 @@ dotnet run
 ### Step 5: Explore
 1. **Click the island** - it expands
 2. **Swipe left/right** - navigate between 6 pages
-3. **Wait 3 seconds** - it auto-collapses
+3. **Click outside the app** - it auto-collapses
 
 ## Optional: Configure AI (For AI Features)
 1. Expand the island (click it)
 2. Swipe to the last page (Settings - Page 6)
-3. Enter your OpenRouter API key (get from https://openrouter.ai)
-4. Click "Save Settings"
-5. Navigate to Page 3 (AI Response)
-6. Type a message and press Enter
+3. Choose provider: **OpenRouter** or **Groq**
+4. Enter your API key for the selected provider
+5. Click "Save Settings"
+6. Navigate to Page 3 (AI Response)
+7. Type a message and press Enter
+
+## Privacy Consent (Required for Monitoring Features)
+1. In Settings (Page 6), check: "I understand and consent to local monitoring features"
+2. Enable the feature toggles you want:
+  - Clipboard monitoring
+  - WhatsApp/Telegram call monitoring
+3. Save settings
+
+By default, these monitoring features are disabled until consent is given.
 
 ## Page Overview
 - **Page 1**: System info (time, date, weather, battery)
@@ -73,9 +83,10 @@ Press `Ctrl+C` in the terminal where it's running, or:
 ## Tips
 - The island auto-collapses after 3 seconds of no interaction
 - All tasks are saved automatically
-- Clipboard history updates in real-time
+- Clipboard history updates only when clipboard monitoring is enabled in Settings
 - Weather updates every 5 minutes
 - The island stays on top of all windows
+- AI API keys are stored securely using Windows DPAPI
 
 ## Troubleshooting
 
@@ -90,15 +101,19 @@ Press `Ctrl+C` in the terminal where it's running, or:
 - Wait 30 seconds for first weather update
 
 **Problem: AI not working**
-- Configure OpenRouter API key in Settings (Page 6)
+- Configure provider + API key in Settings (Page 6)
 - Ensure you have internet connection
-- Check API key validity at openrouter.ai
+- Check provider key validity (OpenRouter or Groq)
+
+**Problem: Clipboard/call features not working**
+- Confirm privacy consent is enabled in Settings
+- Confirm the specific monitoring toggle is enabled
 
 ## Creating a Shortcut
 Create a batch file `start-island.bat`:
 ```batch
 @echo off
-cd /d e:\island\FloatingIsland
+cd /d e:\Woobly
 start "" dotnet run
 ```
 
@@ -109,7 +124,12 @@ dotnet publish -c Release -r win-x64 --self-contained
 
 The executable will be at:
 ```
-bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe
+bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\Woobly.exe
+```
+
+## Run Tests
+```powershell
+dotnet test Woobly.Tests/Woobly.Tests.csproj
 ```
 
 ## Next Steps

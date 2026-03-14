@@ -17,9 +17,10 @@ namespace Woobly.Services
                 _cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
                 _ = _cpuCounter.NextValue();
             }
-            catch
+            catch (Exception ex)
             {
                 _cpuCounter = null;
+                AppLog.Warn($"CPU counter initialization failed: {ex.Message}");
             }
         }
 
@@ -33,19 +34,21 @@ namespace Woobly.Services
                 info.BatteryPercentage = (int)(powerStatus.BatteryLifePercent * 100);
                 info.IsCharging = powerStatus.PowerLineStatus == WinForms.PowerLineStatus.Online;
             }
-            catch
+            catch (Exception ex)
             {
                 info.BatteryPercentage = 100;
                 info.IsCharging = false;
+                AppLog.Warn($"Battery status update failed: {ex.Message}");
             }
 
             try
             {
                 info.IsNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
             }
-            catch
+            catch (Exception ex)
             {
                 info.IsNetworkAvailable = false;
+                AppLog.Warn($"Network status update failed: {ex.Message}");
             }
 
             try
@@ -60,9 +63,10 @@ namespace Woobly.Services
                     info.CpuUsage = null;
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 info.CpuUsage = null;
+                AppLog.Warn($"CPU usage update failed: {ex.Message}");
             }
         }
 
@@ -79,19 +83,21 @@ namespace Woobly.Services
                 info.BatteryPercentage = (int)(powerStatus.BatteryLifePercent * 100);
                 info.IsCharging = powerStatus.PowerLineStatus == WinForms.PowerLineStatus.Online;
             }
-            catch
+            catch (Exception ex)
             {
                 info.BatteryPercentage = 100;
                 info.IsCharging = false;
+                AppLog.Warn($"Battery status read failed: {ex.Message}");
             }
 
             try
             {
                 info.IsNetworkAvailable = NetworkInterface.GetIsNetworkAvailable();
             }
-            catch
+            catch (Exception ex)
             {
                 info.IsNetworkAvailable = false;
+                AppLog.Warn($"Network status read failed: {ex.Message}");
             }
 
             try
@@ -102,9 +108,10 @@ namespace Woobly.Services
                     info.CpuUsage = Math.Round(value, 0);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 info.CpuUsage = null;
+                AppLog.Warn($"CPU usage read failed: {ex.Message}");
             }
 
             return info;

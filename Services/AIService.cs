@@ -42,9 +42,9 @@ namespace Woobly.Services
                 }
             };
 
-        public AIService()
+        public AIService(HttpClient? httpClient = null)
         {
-            _httpClient = new HttpClient
+            _httpClient = httpClient ?? new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(60)
             };
@@ -71,6 +71,7 @@ namespace Woobly.Services
             if (!ProviderConfigs.TryGetValue(provider ?? string.Empty, out var providerConfig))
             {
                 onToken($"Unsupported AI provider: {provider}");
+                AppLog.Warn($"AI provider not recognized: {provider}");
                 return;
             }
 
@@ -102,6 +103,7 @@ namespace Woobly.Services
                 if (!response.IsSuccessStatusCode)
                 {
                     var errorText = await response.Content.ReadAsStringAsync(ct);
+                    AppLog.Warn($"AI request failed. Provider={providerConfig.Name}, Status={(int)response.StatusCode}");
                     try
                     {
                         var errorJson = JObject.Parse(errorText);
@@ -134,12 +136,16 @@ namespace Woobly.Services
                         if (token != null)
                             onToken(token);
                     }
-                    catch { /* malformed SSE chunk — skip */ }
+                    catch (Exception ex)
+                    {
+                        AppLog.Warn($"Malformed AI stream chunk skipped: {ex.Message}");
+                    }
                 }
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
+                AppLog.Error($"AI request crashed for provider {providerConfig.Name}", ex);
                 onToken($"\nError: {ex.Message}");
             }
         }

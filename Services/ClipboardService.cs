@@ -6,45 +6,83 @@ using Woobly.Models;
 
 namespace Woobly.Services
 {
-    public class ClipboardService
+    public interface IClipboardAdapter
+    {
+        bool ContainsText();
+        string GetText();
+        void SetText(string text);
+    }
+
+    public sealed class SystemClipboardAdapter : IClipboardAdapter
+    {
+        public bool ContainsText() => WpfClipboard.ContainsText();
+        public string GetText() => WpfClipboard.GetText();
+        public void SetText(string text) => WpfClipboard.SetText(text);
+    }
+
+    public class ClipboardService : IDisposable
     {
         private readonly List<ClipboardItem> _items = new List<ClipboardItem>();
+        private readonly IClipboardAdapter _clipboard;
         private string? _lastClipboardText;
-        private DispatcherTimer _monitorTimer;
+        private readonly DispatcherTimer _monitorTimer;
         private int _historyLimit;
+        private bool _isMonitoring;
 
         public event Action<List<ClipboardItem>>? ClipboardChanged;
 
-        public ClipboardService(int historyLimit = 2)
+        public ClipboardService(int historyLimit = 2, IClipboardAdapter? clipboard = null, bool startMonitoring = true)
         {
+            _clipboard = clipboard ?? new SystemClipboardAdapter();
             _historyLimit = historyLimit < 1 ? 1 : historyLimit;
             _monitorTimer = new DispatcherTimer
             {
                 Interval = TimeSpan.FromMilliseconds(500)
             };
             _monitorTimer.Tick += MonitorClipboard;
+
+            if (startMonitoring)
+            {
+                Start();
+            }
+        }
+
+        public void Start()
+        {
+            if (_isMonitoring) return;
             _monitorTimer.Start();
+            _isMonitoring = true;
+        }
+
+        public void Stop()
+        {
+            if (!_isMonitoring) return;
+            _monitorTimer.Stop();
+            _isMonitoring = false;
         }
 
         private void MonitorClipboard(object? sender, EventArgs e)
         {
             try
             {
-                if (WpfClipboard.ContainsText())
+                if (_clipboard.ContainsText())
                 {
-                    var text = WpfClipboard.GetText();
+                    var text = _clipboard.GetText();
                     if (!string.IsNullOrWhiteSpace(text) && text != _lastClipboardText)
                     {
-                        _lastClipboardText = text;
-                        AddClipboardItem(text);
+                        CaptureText(text);
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Clipboard monitor tick failed: {ex.Message}");
+            }
         }
 
-        private void AddClipboardItem(string text)
+        public void CaptureText(string text)
         {
+            _lastClipboardText = text;
             var item = new ClipboardItem { Content = text };
             _items.Insert(0, item);
 
@@ -75,10 +113,19 @@ namespace Woobly.Services
         {
             try
             {
-                WpfClipboard.SetText(text);
+                _clipboard.SetText(text);
                 _lastClipboardText = text;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Clipboard restore failed: {ex.Message}");
+            }
+        }
+
+        public void Dispose()
+        {
+            Stop();
+            _monitorTimer.Tick -= MonitorClipboard;
         }
     }
 }

@@ -17,8 +17,9 @@ namespace Woobly.Services
                 var value = key?.GetValue(AppName) as string;
                 return !string.IsNullOrEmpty(value);
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Warn($"Startup registry read failed: {ex.Message}");
                 return false;
             }
         }
@@ -43,9 +44,9 @@ namespace Woobly.Services
                     key.DeleteValue(AppName, false);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Ignore registry errors
+                AppLog.Warn($"Startup registry write failed: {ex.Message}");
             }
         }
     }

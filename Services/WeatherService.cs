@@ -33,8 +33,9 @@ namespace Woobly.Services
 
                 return (temp, condition, icon);
             }
-            catch
+            catch (Exception ex)
             {
+                AppLog.Warn($"Weather fetch failed for city '{city}': {ex.Message}");
                 return (0, "N/A", "");
             }
         }

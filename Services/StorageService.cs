@@ -12,16 +12,19 @@ namespace Woobly.Services
         private readonly string _settingsFile;
         private readonly string _tasksFile;
         private readonly string _appSettingsFile;
+        private readonly ISecretStore _secretStore;
+        private const string AISecretKeyPrefix = "ai-provider-key::";
 
-        public StorageService()
+        public StorageService(string? dataFolderOverride = null, ISecretStore? secretStore = null)
         {
-            _dataFolder = Path.Combine(
+            _dataFolder = dataFolderOverride ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
                 "Woobly"
             );
             _settingsFile = Path.Combine(_dataFolder, "settings.json");
             _tasksFile = Path.Combine(_dataFolder, "tasks.json");
             _appSettingsFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "appsettings.json");
+            _secretStore = secretStore ?? new DpapiSecretStore(Path.Combine(_dataFolder, "secrets"));
 
             if (!Directory.Exists(_dataFolder))
                 Directory.CreateDirectory(_dataFolder);
@@ -44,7 +47,10 @@ namespace Woobly.Services
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to load developer appsettings.json: {ex.Message}");
+            }
             
             // Load user settings (overrides defaults)
             try
@@ -91,10 +97,36 @@ namespace Woobly.Services
                         settings.AnimationDuration = userSettings.AnimationDuration;
                         settings.IdleTimeout = userSettings.IdleTimeout;
                         settings.IgnorePointerWhenInactive = userSettings.IgnorePointerWhenInactive;
+                        settings.HasCompletedPrivacyConsent = userSettings.HasCompletedPrivacyConsent;
+                        settings.EnableClipboardMonitoring = userSettings.EnableClipboardMonitoring;
+                        settings.EnableCallMonitoring = userSettings.EnableCallMonitoring;
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to load user settings: {ex.Message}");
+            }
+
+            // Load AI API key from DPAPI secure store first; migrate plaintext fallback if present.
+            try
+            {
+                var secretKey = BuildAISecretKey(settings.AIProvider);
+                var secureValue = _secretStore.GetSecret(secretKey);
+                if (!string.IsNullOrWhiteSpace(secureValue))
+                {
+                    settings.AIApiKey = secureValue;
+                    settings.OpenRouterApiKey = secureValue;
+                }
+                else if (!string.IsNullOrWhiteSpace(settings.AIApiKey))
+                {
+                    _secretStore.SetSecret(secretKey, settings.AIApiKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to load secure AI key: {ex.Message}");
+            }
             
             return settings;
         }
@@ -103,10 +135,25 @@ namespace Woobly.Services
         {
             try
             {
-                var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
+                // Persist sensitive keys via DPAPI store, not plain JSON.
+                var secretKey = BuildAISecretKey(settings.AIProvider);
+                if (!string.IsNullOrWhiteSpace(settings.AIApiKey))
+                {
+                    _secretStore.SetSecret(secretKey, settings.AIApiKey);
+                }
+                else
+                {
+                    _secretStore.DeleteSecret(secretKey);
+                }
+
+                var safeSettings = CloneWithoutSecrets(settings);
+                var json = JsonConvert.SerializeObject(safeSettings, Formatting.Indented);
                 File.WriteAllText(_settingsFile, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Error("Failed to save settings", ex);
+            }
         }
 
         public List<TaskItem> LoadTasks()
@@ -119,7 +166,10 @@ namespace Woobly.Services
                     return JsonConvert.DeserializeObject<List<TaskItem>>(json) ?? new List<TaskItem>();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to load tasks: {ex.Message}");
+            }
             return new List<TaskItem>();
         }
 
@@ -130,7 +180,43 @@ namespace Woobly.Services
                 var json = JsonConvert.SerializeObject(tasks, Formatting.Indented);
                 File.WriteAllText(_tasksFile, json);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Error("Failed to save tasks", ex);
+            }
+        }
+
+        private static string BuildAISecretKey(string provider)
+        {
+            var normalized = string.IsNullOrWhiteSpace(provider) ? "OpenRouter" : provider.Trim();
+            return AISecretKeyPrefix + normalized;
+        }
+
+        private static AppSettings CloneWithoutSecrets(AppSettings settings)
+        {
+            return new AppSettings
+            {
+                AIProvider = settings.AIProvider,
+                AIApiKey = null,
+                AIModel = settings.AIModel,
+                OpenRouterApiKey = null,
+                OpenRouterModel = settings.OpenRouterModel,
+                OpenWeatherApiKey = settings.OpenWeatherApiKey,
+                City = settings.City,
+                ClipboardHistoryLimit = settings.ClipboardHistoryLimit,
+                RunOnStartup = settings.RunOnStartup,
+                HasCompletedPrivacyConsent = settings.HasCompletedPrivacyConsent,
+                EnableClipboardMonitoring = settings.EnableClipboardMonitoring,
+                EnableCallMonitoring = settings.EnableCallMonitoring,
+                IslandWidth = settings.IslandWidth,
+                IslandHeight = settings.IslandHeight,
+                ExpandedWidth = settings.ExpandedWidth,
+                ExpandedHeight = settings.ExpandedHeight,
+                AccentColor = settings.AccentColor,
+                AnimationDuration = settings.AnimationDuration,
+                IdleTimeout = settings.IdleTimeout,
+                IgnorePointerWhenInactive = settings.IgnorePointerWhenInactive
+            };
         }
     }
 }

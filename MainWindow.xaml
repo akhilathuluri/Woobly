@@ -895,6 +895,27 @@
                                     <ComboBoxItem Content="10" Tag="10"/>
                                 </ComboBox>
 
+                                    <TextBlock Text="Privacy &amp; Monitoring"
+                                              Foreground="{StaticResource PrimaryTextBrush}"
+                                              FontFamily="Space Grotesk"
+                                              FontSize="13"
+                                              FontWeight="SemiBold"
+                                              Margin="0,0,0,12"/>
+                                    <CheckBox Content="I understand and consent to local monitoring features"
+                                              IsChecked="{Binding Settings.HasCompletedPrivacyConsent, Mode=TwoWay}"
+                                              Style="{StaticResource ModernCheckBox}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="Enable clipboard monitoring"
+                                              IsChecked="{Binding Settings.EnableClipboardMonitoring, Mode=TwoWay}"
+                                              IsEnabled="{Binding Settings.HasCompletedPrivacyConsent}"
+                                              Style="{StaticResource ModernCheckBox}"
+                                              Margin="0,0,0,8"/>
+                                    <CheckBox Content="Enable WhatsApp/Telegram call monitoring"
+                                              IsChecked="{Binding Settings.EnableCallMonitoring, Mode=TwoWay}"
+                                              IsEnabled="{Binding Settings.HasCompletedPrivacyConsent}"
+                                              Style="{StaticResource ModernCheckBox}"
+                                              Margin="0,0,0,18"/>
+
                                 <TextBlock Text="Startup" 
                                           Foreground="{StaticResource PrimaryTextBrush}"
                                           FontFamily="Space Grotesk"

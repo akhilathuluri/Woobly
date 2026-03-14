@@ -16,10 +16,10 @@ namespace Woobly.ViewModels
         private readonly WeatherService _weatherService;
         private readonly AIService _aiService;
         private readonly MediaService _mediaService;
-        private readonly ClipboardService _clipboardService;
+        private ClipboardService? _clipboardService;
         private readonly StorageService _storageService;
         private readonly StartupService _startupService;
-        private readonly CallDetectionService _callDetectionService;
+        private CallDetectionService? _callDetectionService;
         private readonly BatteryNotificationService _batteryNotificationService;
         private readonly BluetoothNotificationService _bluetoothNotificationService;
         private readonly DispatcherTimer _updateTimer;
@@ -115,7 +115,6 @@ namespace Woobly.ViewModels
             _mediaService = new MediaService();
             _storageService = new StorageService();
             _startupService = new StartupService();
-            _callDetectionService = new CallDetectionService();
             _batteryNotificationService = new BatteryNotificationService();
             _batteryNotificationService.NotificationTriggered += (icon, msg) => OnBatteryNotification?.Invoke(icon, msg);
 
@@ -127,7 +126,6 @@ namespace Woobly.ViewModels
             // Load settings and tasks
             Settings = _storageService.LoadSettings();
             Settings.RunOnStartup = _startupService.IsEnabled();
-            _clipboardService = new ClipboardService(Settings.ClipboardHistoryLimit);
             Tasks = new ObservableCollection<TaskItem>(_storageService.LoadTasks());
             ClipboardItems = new ObservableCollection<ClipboardItem>();
 
@@ -144,32 +142,7 @@ namespace Woobly.ViewModels
 
             // Subscribe to events
             _mediaService.MediaChanged += media => MediaInfo = media;
-            _callDetectionService.CallStarted += call =>
-            {
-                ActiveCall = call;
-                OnCallStarted?.Invoke();
-            };
-            _callDetectionService.CallEnded += () =>
-            {
-                ActiveCall = new CallInfo { IsActive = false };
-                OnCallEnded?.Invoke();
-            };
-            // ContactName resolved asynchronously (e.g. via UIA for WhatsApp Desktop).
-            // Since CallInfo implements INotifyPropertyChanged and ContactName has a setter,
-            // simply writing to ActiveCall.ContactName updates the XAML binding live.
-            _callDetectionService.ContactNameResolved += name =>
-            {
-                if (ActiveCall.IsActive)
-                    ActiveCall.ContactName = name;
-            };
-            _clipboardService.ClipboardChanged += items => 
-            {
-                ClipboardItems.Clear();
-                foreach (var item in items)
-                {
-                    ClipboardItems.Add(item);
-                }
-            };
+            ApplyPrivacySettings();
 
             // Initial weather update
             _ = UpdateWeather();
@@ -257,7 +230,7 @@ namespace Woobly.ViewModels
 
         public void BringCallWindowToFront()
         {
-            _callDetectionService.BringCallWindowToFront();
+            _callDetectionService?.BringCallWindowToFront();
         }
 
         public void AddTask(string content)
@@ -284,7 +257,7 @@ namespace Woobly.ViewModels
 
         public void RestoreClipboard(string text)
         {
-            _clipboardService.RestoreToClipboard(text);
+            _clipboardService?.RestoreToClipboard(text);
         }
 
         public void SaveSettings()
@@ -293,16 +266,115 @@ namespace Woobly.ViewModels
             Settings.OpenRouterApiKey = Settings.AIApiKey;
             Settings.OpenRouterModel = Settings.AIModel;
 
+            if (!Settings.HasCompletedPrivacyConsent)
+            {
+                Settings.EnableClipboardMonitoring = false;
+                Settings.EnableCallMonitoring = false;
+            }
+
             _storageService.SaveSettings(Settings);
 
             // Apply run-on-startup setting
             _startupService.SetEnabled(Settings.RunOnStartup);
 
             // Update clipboard history limit at runtime
-            _clipboardService.UpdateHistoryLimit(Settings.ClipboardHistoryLimit);
+            _clipboardService?.UpdateHistoryLimit(Settings.ClipboardHistoryLimit);
+
+            ApplyPrivacySettings();
             
             // Immediately update weather with new settings
             _ = UpdateWeather();
+        }
+
+        private void ApplyPrivacySettings()
+        {
+            var hasConsent = Settings.HasCompletedPrivacyConsent;
+            EnsureClipboardMonitoring(hasConsent && Settings.EnableClipboardMonitoring);
+            EnsureCallMonitoring(hasConsent && Settings.EnableCallMonitoring);
+        }
+
+        private void EnsureClipboardMonitoring(bool enabled)
+        {
+            if (!enabled)
+            {
+                if (_clipboardService != null)
+                {
+                    _clipboardService.ClipboardChanged -= ClipboardServiceOnClipboardChanged;
+                    _clipboardService.Dispose();
+                    _clipboardService = null;
+                }
+
+                ClipboardItems.Clear();
+                return;
+            }
+
+            if (_clipboardService != null)
+            {
+                _clipboardService.UpdateHistoryLimit(Settings.ClipboardHistoryLimit);
+                _clipboardService.Start();
+                return;
+            }
+
+            _clipboardService = new ClipboardService(Settings.ClipboardHistoryLimit);
+            _clipboardService.ClipboardChanged += ClipboardServiceOnClipboardChanged;
+        }
+
+        private void ClipboardServiceOnClipboardChanged(List<ClipboardItem> items)
+        {
+            ClipboardItems.Clear();
+            foreach (var item in items)
+            {
+                ClipboardItems.Add(item);
+            }
+        }
+
+        private void EnsureCallMonitoring(bool enabled)
+        {
+            if (!enabled)
+            {
+                if (_callDetectionService != null)
+                {
+                    _callDetectionService.CallStarted -= OnCallStartedInternal;
+                    _callDetectionService.CallEnded -= OnCallEndedInternal;
+                    _callDetectionService.ContactNameResolved -= OnContactResolvedInternal;
+                    _callDetectionService.Dispose();
+                    _callDetectionService = null;
+                }
+
+                ActiveCall = new CallInfo { IsActive = false };
+                return;
+            }
+
+            if (_callDetectionService != null)
+            {
+                _callDetectionService.Start();
+                return;
+            }
+
+            _callDetectionService = new CallDetectionService();
+            _callDetectionService.CallStarted += OnCallStartedInternal;
+            _callDetectionService.CallEnded += OnCallEndedInternal;
+            _callDetectionService.ContactNameResolved += OnContactResolvedInternal;
+        }
+
+        private void OnCallStartedInternal(CallInfo call)
+        {
+            ActiveCall = call;
+            OnCallStarted?.Invoke();
+        }
+
+        private void OnCallEndedInternal()
+        {
+            ActiveCall = new CallInfo { IsActive = false };
+            OnCallEnded?.Invoke();
+        }
+
+        private void OnContactResolvedInternal(string name)
+        {
+            if (ActiveCall.IsActive)
+            {
+                ActiveCall.ContactName = name;
+            }
         }
 
         public async System.Threading.Tasks.Task MediaPlayPauseAsync()
@@ -329,6 +401,9 @@ namespace Woobly.ViewModels
         public void Dispose()
         {
             _updateTimer.Stop();
+            _clipboardService?.Dispose();
+            _callDetectionService?.Dispose();
+            _mediaService.Dispose();
             _bluetoothNotificationService.Dispose();
         }
     }

@@ -1,6 +1,6 @@
-# Floating Island - Intelligent Desktop Companion
+# Woobly - Intelligent Desktop Companion
 
-A Windows desktop companion inspired by Apple's Dynamic Island, providing a persistent floating interface with multiple interactive features.
+A Windows desktop companion inspired by Dynamic Island, providing a persistent floating interface with multiple interactive features.
 
 ## Features
 
@@ -8,10 +8,13 @@ A Windows desktop companion inspired by Apple's Dynamic Island, providing a pers
 - **Expanded State**: Access 6 interactive pages by swiping
   - Page 1: System Overview (detailed time, date, weather, battery)
   - Page 2: Media Control (auto-detects playing media)
-  - Page 3: AI Assistant (powered by OpenRouter)
+  - Page 3: AI Assistant (provider selectable: OpenRouter or Groq)
   - Page 4: Task Memory (quick task management)
-  - Page 5: Clipboard Memory (stores last 2 copied items)
+  - Page 5: Clipboard Memory (history size configurable)
   - Page 6: Settings
+- **Privacy Controls**: Clipboard and call monitoring are consent-gated and disabled by default
+- **Secure AI Keys**: AI API keys are stored with Windows DPAPI (per-user encryption)
+- **Structured Logging**: Runtime diagnostics written to local log file
 
 ## System Requirements
 
@@ -22,7 +25,7 @@ A Windows desktop companion inspired by Apple's Dynamic Island, providing a pers
 
 ### 1. Clone/Download the Project
 ```powershell
-cd e:\island\FloatingIsland
+cd e:\Woobly
 ```
 
 ### 2. Configure Weather API (Developer Setup)
@@ -47,7 +50,7 @@ dotnet run
 
 Or run the compiled executable:
 ```powershell
-.\bin\Debug\net8.0-windows\FloatingIsland.exe
+.\bin\Debug\net8.0-windows10.0.19041.0\Woobly.exe
 ```
 
 ## Configuration
@@ -59,9 +62,19 @@ The OpenWeather API key is configured by the developer in [appsettings.json](app
 Users must configure their own AI settings:
 1. Click the island to expand
 2. Swipe to Page 6 (Settings)
-3. Enter your OpenRouter API key (get one from [OpenRouter](https://openrouter.ai))
-4. Optionally change the AI model (default: anthropic/claude-3.5-sonnet)
-5. Click "Save Settings"
+3. Select provider: OpenRouter or Groq
+4. Enter your provider API key
+5. Optionally change the model
+6. Click "Save Settings"
+
+### Privacy Consent (Required for Monitoring Features)
+Monitoring is off by default. To enable:
+1. Open Page 6 (Settings)
+2. Check consent: "I understand and consent to local monitoring features"
+3. Enable specific features:
+  - Clipboard monitoring
+  - WhatsApp/Telegram call monitoring
+4. Save settings
 
 ## Usage
 
@@ -111,13 +124,14 @@ The island will appear at the top center of your screen as a small floating bar 
 - Tasks are saved locally and persist between sessions
 
 **Page 5 - Clipboard Memory**
-- Automatically captures your last 2 copied items
+- Captures copied text only when monitoring is enabled in Settings
 - Click any item to restore it to clipboard
 - Shows preview (first 100 characters)
-- Auto-updates when you copy new text
+- History length is configurable in Settings
 
 **Page 6 - Settings**
-- Configure AI model and API key
+- Configure AI provider, model, and API key
+- Configure privacy consent and monitoring toggles
 - Change city for weather
 - All settings are saved locally
 
@@ -135,12 +149,16 @@ The island will appear at the top center of your screen as a small floating bar 
 
 All data is stored locally at:
 ```
-%LocalAppData%\FloatingIsland\
+%LocalAppData%\Woobly\
 ```
 
 Files:
-- `settings.json` - User configuration (AI key, city preferences)
+- `settings.json` - User configuration (non-sensitive settings)
 - `tasks.json` - Task list
+- `woobly.log` - Structured runtime logs
+
+Secure secrets:
+- AI API keys are stored encrypted via Windows DPAPI under the same LocalAppData area
 
 Weather API key for developers:
 ```
@@ -157,10 +175,12 @@ Weather API key for developers:
 **Services:**
 - `SystemMonitorService` - Battery status, system time
 - `WeatherService` - OpenWeather API integration
-- `AIService` - OpenRouter API for AI responses
+- `AIService` - Provider-routed AI streaming (OpenRouter/Groq)
 - `MediaService` - Media playback detection (placeholder)
 - `ClipboardService` - Clipboard monitoring
 - `StorageService` - Local JSON-based persistence
+- `SecretStore` - DPAPI-backed secret storage
+- `AppLogger` - Structured logging
 
 **Models:**
 - `SystemInfo`, `MediaInfo`, `TaskItem`, `ClipboardItem`, `AppSettings`
@@ -197,13 +217,17 @@ The island follows these principles:
 - Ensure API key is valid (test at openweathermap.org)
 
 **AI not responding:**
-- Configure OpenRouter API key in Settings (Page 6)
+- Configure provider + API key in Settings (Page 6)
 - Check internet connection
-- Verify API key is valid
+- Verify provider key and model are valid
 
 **Tasks not saving:**
-- Check if %LocalAppData%\FloatingIsland\ folder exists
+- Check if %LocalAppData%\Woobly\ folder exists
 - Ensure write permissions
+
+**Clipboard or call features not active:**
+- Ensure privacy consent is checked in Settings
+- Ensure the specific monitoring toggle is enabled
 
 ## Future Enhancements
 
@@ -236,3 +260,9 @@ dotnet publish -c Release -r win-x64 --self-contained
 **APIs Used:**
 - OpenWeather API (weather data)
 - OpenRouter API (AI responses)
+- Groq API (AI responses)
+
+**Run Tests:**
+```powershell
+dotnet test Woobly.Tests/Woobly.Tests.csproj
+```

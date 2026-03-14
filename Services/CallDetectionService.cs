@@ -13,7 +13,7 @@ namespace Woobly.Services
     /// of those processes. No special permissions or app packaging is required.
     /// Fires <see cref="CallStarted"/> / <see cref="CallEnded"/> events.
     /// </summary>
-    public class CallDetectionService
+    public class CallDetectionService : IDisposable
     {
         // ── Win32 ────────────────────────────────────────────────────────────
         private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
@@ -76,6 +76,7 @@ namespace Woobly.Services
 
         // ── State ─────────────────────────────────────────────────────────────
         private readonly DispatcherTimer _timer;
+        private bool _isRunning;
         private CallInfo? _lastCall;
         // Per-app previously-seen window handles — used to spot brand-new popup windows
         private readonly Dictionary<string, HashSet<IntPtr>> _knownHandles = new();
@@ -106,7 +107,21 @@ namespace Woobly.Services
                 Interval = TimeSpan.FromMilliseconds(1200)
             };
             _timer.Tick += (_, _) => Poll();
+            Start();
+        }
+
+        public void Start()
+        {
+            if (_isRunning) return;
             _timer.Start();
+            _isRunning = true;
+        }
+
+        public void Stop()
+        {
+            if (!_isRunning) return;
+            _timer.Stop();
+            _isRunning = false;
         }
 
         // ── Public helpers ───────────────────────────────────────────────────
@@ -167,7 +182,10 @@ namespace Woobly.Services
                         }
                     }
                 }
-                catch { /* process may have exited */ }
+                catch (Exception ex)
+                {
+                    AppLog.Warn($"Skipping process during call scan: {ex.Message}");
+                }
             }
             if (watchedPids.Count == 0)
             {
@@ -374,7 +392,11 @@ namespace Woobly.Services
                 var counter = new[] { 0 };
                 return WalkUIA(root, appName, 0, counter);
             }
-            catch { return ""; }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"UI Automation contact resolution failed: {ex.Message}");
+                return "";
+            }
         }
 
         private static readonly HashSet<string> UiControlNames = new(StringComparer.OrdinalIgnoreCase)
@@ -418,7 +440,10 @@ namespace Woobly.Services
                     child = walker.GetNextSibling(child);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"UIA node walk failed: {ex.Message}");
+            }
             return "";
         }
 
@@ -567,5 +592,10 @@ namespace Woobly.Services
             "telegram" => "Telegram",
             _ => Capitalise(processKeyword)
         };
+
+        public void Dispose()
+        {
+            Stop();
+        }
     }
 }

@@ -46,7 +46,10 @@ namespace Woobly.Services
                 var selector = BluetoothDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected);
                 _classicWatcher = BuildWatcher(selector);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to start classic Bluetooth watcher: {ex.Message}");
+            }
 
             // BLE (fitness trackers, modern keyboards/mice, etc.)
             try
@@ -54,7 +57,10 @@ namespace Woobly.Services
                 var bleSelector = BluetoothLEDevice.GetDeviceSelectorFromConnectionStatus(BluetoothConnectionStatus.Connected);
                 _bleWatcher = BuildWatcher(bleSelector);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to start BLE watcher: {ex.Message}");
+            }
         }
 
         private DeviceWatcher BuildWatcher(string selector)
@@ -103,7 +109,10 @@ namespace Woobly.Services
                 if (watcher.Status is DeviceWatcherStatus.Started or DeviceWatcherStatus.EnumerationCompleted)
                     watcher.Stop();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Failed to stop Bluetooth watcher: {ex.Message}");
+            }
         }
     }
 }

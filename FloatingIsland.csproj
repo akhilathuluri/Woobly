@@ -24,4 +24,10 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Compile Remove="Woobly.Tests\**\*.cs" />
+    <EmbeddedResource Remove="Woobly.Tests\**\*" />
+    <None Remove="Woobly.Tests\**\*" />
+  </ItemGroup>
+
 </Project>

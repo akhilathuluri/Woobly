@@ -10,9 +10,9 @@ using Windows.Storage.Streams;
 
 namespace Woobly.Services
 {
-    public class MediaService
+    public class MediaService : IDisposable
     {
-        private DispatcherTimer _updateTimer;
+        private readonly DispatcherTimer _updateTimer;
         private MediaInfo _currentMedia;
         private GlobalSystemMediaTransportControlsSessionManager? _sessionManager;
         private GlobalSystemMediaTransportControlsSession? _currentSession;
@@ -39,7 +39,10 @@ namespace Woobly.Services
             {
                 _sessionManager = await GlobalSystemMediaTransportControlsSessionManager.RequestAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Media control initialization failed: {ex.Message}");
+            }
         }
 
         private async Task UpdateMediaInfoAsync()
@@ -85,9 +88,10 @@ namespace Woobly.Services
                             _currentMedia.AlbumArt = null;
                         }
                     }
-                    catch
+                    catch (Exception ex)
                     {
                         _currentMedia.AlbumArt = null;
+                        AppLog.Warn($"Album art extraction failed: {ex.Message}");
                     }
                     
                     var timeline = _currentSession.GetTimelineProperties();
@@ -103,10 +107,11 @@ namespace Woobly.Services
 
                 MediaChanged?.Invoke(_currentMedia);
             }
-            catch
+            catch (Exception ex)
             {
                 _currentMedia.IsAvailable = false;
                 MediaChanged?.Invoke(_currentMedia);
+                AppLog.Warn($"Media update tick failed: {ex.Message}");
             }
         }
 
@@ -134,7 +139,10 @@ namespace Woobly.Services
                 // Force immediate update
                 await UpdateMediaInfoAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Play/pause command failed: {ex.Message}");
+            }
         }
 
         public async Task NextAsync()
@@ -146,7 +154,10 @@ namespace Woobly.Services
                 await Task.Delay(500); // Wait for media change
                 await UpdateMediaInfoAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Next media command failed: {ex.Message}");
+            }
         }
 
         public async Task PreviousAsync()
@@ -158,7 +169,15 @@ namespace Woobly.Services
                 await Task.Delay(500); // Wait for media change
                 await UpdateMediaInfoAsync();
             }
-            catch { }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Previous media command failed: {ex.Message}");
+            }
+        }
+
+        public void Dispose()
+        {
+            _updateTimer.Stop();
         }
     }
 }

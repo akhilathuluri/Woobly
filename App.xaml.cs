@@ -1,6 +1,7 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Windows;
+using Woobly.Services;
 using WpfApp = System.Windows.Application;
 using WpfMessageBox = System.Windows.MessageBox;
 
@@ -19,18 +20,28 @@ public partial class App : WpfApp
         // Handle unhandled exceptions
         this.DispatcherUnhandledException += (s, e) =>
         {
-            WpfMessageBox.Show($"Error: {e.Exception.Message}\n\n{e.Exception.StackTrace}", 
-                          "Woobly Error", 
-                          MessageBoxButton.OK, 
+            AppLog.Error("Unhandled UI exception", e.Exception);
+            WpfMessageBox.Show("Something went wrong. Woobly logged details for diagnostics.",
+                          "Woobly Error",
+                          MessageBoxButton.OK,
                           MessageBoxImage.Error);
             e.Handled = true;
         };
         
         AppDomain.CurrentDomain.UnhandledException += (s, e) =>
         {
-            WpfMessageBox.Show($"Fatal Error: {e.ExceptionObject}", 
-                          "Woobly Fatal Error", 
-                          MessageBoxButton.OK, 
+            if (e.ExceptionObject is Exception ex)
+            {
+                AppLog.Error("Fatal unhandled exception", ex);
+            }
+            else
+            {
+                AppLog.Error($"Fatal unhandled exception object: {e.ExceptionObject}");
+            }
+
+            WpfMessageBox.Show("A fatal error occurred. Woobly logged details for diagnostics.",
+                          "Woobly Fatal Error",
+                          MessageBoxButton.OK,
                           MessageBoxImage.Error);
         };
     }

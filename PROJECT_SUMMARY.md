@@ -1,5 +1,39 @@
 # Floating Island - Project Summary
 
+## Release Update (March 2026)
+
+The codebase now includes release-hardening improvements while preserving core UX and architecture:
+
+- AI provider routing now supports both OpenRouter and Groq.
+- AI API keys are stored securely using Windows DPAPI (not plain JSON).
+- Clipboard and call monitoring are consent-gated and disabled by default.
+- Structured logging has been added for operational diagnostics.
+- Polling services now expose proper start/stop/dispose semantics.
+- A basic automated test suite has been added.
+
+### New/Updated Components
+
+- `Services/SecretStore.cs` - DPAPI-backed secret storage abstraction
+- `Services/AppLogger.cs` - structured file logger (`%LocalAppData%\\Woobly\\woobly.log`)
+- `Services/StorageService.cs` - secure key persistence + settings/task diagnostics
+- `Services/ClipboardService.cs` - start/stop/dispose lifecycle + adapter abstraction
+- `Services/CallDetectionService.cs` - start/stop/dispose lifecycle
+- `Services/MediaService.cs` - disposal and warning diagnostics
+- `Models/AppSettings.cs` - privacy consent and monitoring toggles
+- `Woobly.Tests/*` - xUnit tests for settings persistence, provider routing, and clipboard behavior
+
+### Updated Runtime Behavior
+
+- Monitoring features require explicit consent in Settings before activation.
+- Clipboard monitoring and call monitoring can be toggled independently.
+- Existing OpenRouter behavior remains available; Groq is an additional provider option.
+
+### Test Command
+
+```powershell
+dotnet test Woobly.Tests/Woobly.Tests.csproj
+```
+
 ## What Was Built
 
 A Windows desktop companion application inspired by Apple's Dynamic Island, implemented as a WPF application using .NET 8.0. The application creates a persistent floating interface that lives at the top center of the screen, providing quick access to system information, tasks, AI assistance, and more.
