@@ -1,4 +1,4 @@
-# Floating Island - Project Summary
+# Woobly - Project Summary
 
 ## Release Update (March 2026)
 
@@ -48,7 +48,7 @@ A Windows desktop companion application inspired by Apple's Dynamic Island, impl
 
 ### Project Structure
 ```
-FloatingIsland/
+Woobly/
 ├── Models/                    # Data models
 │   ├── SystemInfo.cs         # Time, weather, battery
 │   ├── MediaInfo.cs          # Media playback info
@@ -58,7 +58,7 @@ FloatingIsland/
 ├── Services/                  # Business logic
 │   ├── SystemMonitorService.cs   # Battery & system info
 │   ├── WeatherService.cs         # OpenWeather API
-│   ├── AIService.cs              # OpenRouter API
+│   ├── AIService.cs              # Provider-routed AI API (OpenRouter/Groq)
 │   ├── MediaService.cs           # Media detection
 │   ├── ClipboardService.cs       # Clipboard monitoring
 │   └── StorageService.cs         # Local persistence
@@ -111,7 +111,7 @@ FloatingIsland/
 - Time display
 
 **Page 3 - AI Response**
-- OpenRouter API integration
+- Provider-routed AI integration (OpenRouter/Groq)
 - Text input with Enter-to-send
 - Clean response display (no user message echo)
 - Configurable model selection
@@ -160,8 +160,9 @@ FloatingIsland/
 
 **StorageService**
 - JSON serialization with Newtonsoft.Json
-- Settings: %LocalAppData%\FloatingIsland\settings.json
-- Tasks: %LocalAppData%\FloatingIsland\tasks.json
+- Settings: %LocalAppData%\Woobly\settings.json
+- Tasks: %LocalAppData%\Woobly\tasks.json
+- AI API keys: DPAPI-protected secret storage (not plaintext JSON)
 - Developer config: appsettings.json (OpenWeather key)
 
 **MediaService**
@@ -200,7 +201,7 @@ FloatingIsland/
 ### 7. Data Persistence
 **Local Storage Location**
 ```
-%LocalAppData%\FloatingIsland\
+%LocalAppData%\Woobly\
 ├── settings.json    # User preferences
 └── tasks.json       # Task list
 ```
@@ -220,11 +221,11 @@ FloatingIsland/
 - **Data Retrieved**: Temperature, condition, icon
 - **Refresh**: Every 5 minutes
 
-### OpenRouter API
-- **Endpoint**: https://openrouter.ai/api/v1/chat/completions
+### AI Providers
+- **OpenRouter Endpoint**: https://openrouter.ai/api/v1/chat/completions
+- **Groq Endpoint**: https://api.groq.com/openai/v1/chat/completions
 - **Authentication**: Bearer token
-- **Default Model**: anthropic/claude-3.5-sonnet
-- **User Configurable**: Model selection in settings
+- **User Configurable**: Provider, model, and API key in settings
 
 ## Design Principles Followed
 
@@ -258,10 +259,13 @@ FloatingIsland/
 ### User Configuration (settings.json)
 ```json
 {
-  "OpenRouterApiKey": "user_provided_key",
-  "OpenRouterModel": "anthropic/claude-3.5-sonnet",
+  "AIProvider": "OpenRouter",
+  "AIModel": "openai/gpt-3.5-turbo",
   "OpenWeatherApiKey": "optional_override",
   "City": "London",
+  "HasCompletedPrivacyConsent": false,
+  "EnableClipboardMonitoring": false,
+  "EnableCallMonitoring": false,
   "IslandWidth": 150,
   "IslandHeight": 40,
   "ExpandedWidth": 400,
@@ -272,6 +276,9 @@ FloatingIsland/
   "IgnorePointerWhenInactive": false
 }
 ```
+
+Sensitive settings note:
+- AI API keys are persisted via Windows DPAPI under LocalAppData secrets storage, not in plain settings.json.
 
 ## Build & Deployment
 
@@ -290,14 +297,14 @@ dotnet build -c Release
 dotnet publish -c Release -r win-x64 --self-contained
 ```
 
-Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
+Output: `bin\Release\net8.0-windows10.0.19041.0\win-x64\publish\Woobly.exe`
 
 ## Known Limitations
 
 1. **Media Detection**: Placeholder implementation (requires Windows.Media.Control UWP API)
 2. **Single Monitor**: Auto-positioning assumes primary monitor
 3. **No Hotkeys**: No global hotkey support (requires low-level keyboard hooks)
-4. **No Auto-Start**: Doesn't register for Windows startup
+4. **Startup registration available**: User-configurable run-on-startup in Settings
 5. **Fixed Animation Speed**: Not yet configurable in UI (though stored in settings)
 
 ## Future Enhancement Opportunities
@@ -312,6 +319,7 @@ Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
 8. **Weather Forecasts**: Multi-day weather view
 9. **Notification Integration**: Windows notification center
 10. **Voice Input**: Speech-to-text for AI
+11. **Installer Packaging**: MSIX/installer workflow for public distribution
 
 ## Testing Recommendations
 
@@ -323,6 +331,8 @@ Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
 6. Verify persistence after app restart
 7. Test focus loss scenarios
 8. Validate swipe gesture thresholds
+9. Verify consent-gated monitoring behavior (clipboard/calls off by default)
+10. Validate DPAPI key persistence across app restarts for current user
 
 ## Performance Considerations
 
@@ -331,6 +341,7 @@ Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
 - Time updates: 1-second interval (minimal CPU)
 - Idle timer: 3-second timeout (user configurable)
 - Animation duration: 0.3 seconds (smooth but not slow)
+- Call monitoring polling: ~1200ms (enabled only when consented)
 
 ## Compliance & Best Practices
 
@@ -339,7 +350,7 @@ Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
 ✅ Nullable reference types enabled
 ✅ Proper error handling (try-catch with fallbacks)
 ✅ Local data storage (privacy-friendly)
-✅ API keys user-configurable
+✅ API keys user-configurable and DPAPI-protected
 ✅ Resource cleanup (timer disposal)
 ✅ Event-driven architecture
 ✅ Separation of concerns (services layer)
@@ -349,7 +360,7 @@ Output: `bin\Release\net8.0-windows\win-x64\publish\FloatingIsland.exe`
 A fully functional Windows desktop companion has been successfully built with all the core requirements:
 - ✅ Pure Windows (WPF/C#)
 - ✅ Local data storage
-- ✅ OpenRouter AI integration (user-configured)
+- ✅ OpenRouter + Groq AI integration (user-configured)
 - ✅ OpenWeather API (developer-configured)
 - ✅ No taskbar presence
 - ✅ No window controls
@@ -361,4 +372,4 @@ A fully functional Windows desktop companion has been successfully built with al
 - ✅ Task management
 - ✅ Clipboard history
 
-The application is production-ready with comprehensive documentation and follows Windows desktop application best practices.
+The application is release-ready with privacy controls, secure key handling, structured logging, and baseline automated tests.

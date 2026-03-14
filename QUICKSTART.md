@@ -77,7 +77,7 @@ By default, these monitoring features are disabled until consent is given.
 ## Closing the App
 Press `Ctrl+C` in the terminal where it's running, or:
 1. Open Task Manager (Ctrl+Shift+Esc)
-2. Find "FloatingIsland"
+2. Find "Woobly"
 3. End task
 
 ## Tips
