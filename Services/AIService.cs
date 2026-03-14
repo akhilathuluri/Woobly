@@ -16,6 +16,31 @@ namespace Woobly.Services
     {
         private readonly HttpClient _httpClient;
         private const string OpenRouterUrl = "https://openrouter.ai/api/v1/chat/completions";
+        private const string GroqUrl = "https://api.groq.com/openai/v1/chat/completions";
+
+        private sealed class ProviderConfig
+        {
+            public required string Name { get; init; }
+            public required string Endpoint { get; init; }
+            public required bool AddOpenRouterHeaders { get; init; }
+        }
+
+        private static readonly Dictionary<string, ProviderConfig> ProviderConfigs =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["OpenRouter"] = new ProviderConfig
+                {
+                    Name = "OpenRouter",
+                    Endpoint = OpenRouterUrl,
+                    AddOpenRouterHeaders = true
+                },
+                ["Groq"] = new ProviderConfig
+                {
+                    Name = "Groq",
+                    Endpoint = GroqUrl,
+                    AddOpenRouterHeaders = false
+                }
+            };
 
         public AIService()
         {
@@ -30,6 +55,7 @@ namespace Woobly.Services
         /// Supports full conversation history for context-aware replies.
         /// </summary>
         public async Task StreamResponseAsync(
+            string provider,
             string? apiKey,
             string model,
             IEnumerable<(string role, string content)> messages,
@@ -39,6 +65,12 @@ namespace Woobly.Services
             if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(model))
             {
                 onToken("Please configure AI settings first.");
+                return;
+            }
+
+            if (!ProviderConfigs.TryGetValue(provider ?? string.Empty, out var providerConfig))
+            {
+                onToken($"Unsupported AI provider: {provider}");
                 return;
             }
 
@@ -55,11 +87,14 @@ namespace Woobly.Services
 
                 var json = JsonConvert.SerializeObject(requestBody);
 
-                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, OpenRouterUrl);
+                using var httpRequest = new HttpRequestMessage(HttpMethod.Post, providerConfig.Endpoint);
                 httpRequest.Content = new StringContent(json, Encoding.UTF8, "application/json");
                 httpRequest.Headers.TryAddWithoutValidation("Authorization", $"Bearer {apiKey}");
-                httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://github.com/woobly");
-                httpRequest.Headers.TryAddWithoutValidation("X-Title", "Woobly");
+                if (providerConfig.AddOpenRouterHeaders)
+                {
+                    httpRequest.Headers.TryAddWithoutValidation("HTTP-Referer", "https://github.com/woobly");
+                    httpRequest.Headers.TryAddWithoutValidation("X-Title", "Woobly");
+                }
 
                 using var response = await _httpClient.SendAsync(
                     httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -107,6 +142,19 @@ namespace Woobly.Services
             {
                 onToken($"\nError: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Backward-compatible overload for existing OpenRouter call sites.
+        /// </summary>
+        public Task StreamResponseAsync(
+            string? apiKey,
+            string model,
+            IEnumerable<(string role, string content)> messages,
+            Action<string> onToken,
+            CancellationToken ct = default)
+        {
+            return StreamResponseAsync("OpenRouter", apiKey, model, messages, onToken, ct);
         }
 
         /// <summary>

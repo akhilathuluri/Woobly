@@ -226,8 +226,9 @@ namespace Woobly.ViewModels
             var dispatcher = System.Windows.Application.Current.Dispatcher;
 
             await _aiService.StreamResponseAsync(
-                Settings.OpenRouterApiKey,
-                Settings.OpenRouterModel,
+                Settings.AIProvider,
+                Settings.AIApiKey,
+                Settings.AIModel,
                 history,
                 token =>
                 {
@@ -288,6 +289,10 @@ namespace Woobly.ViewModels
 
         public void SaveSettings()
         {
+            // Keep legacy fields synced for backward compatibility.
+            Settings.OpenRouterApiKey = Settings.AIApiKey;
+            Settings.OpenRouterModel = Settings.AIModel;
+
             _storageService.SaveSettings(Settings);
 
             // Apply run-on-startup setting

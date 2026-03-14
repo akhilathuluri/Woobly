@@ -665,13 +665,38 @@
                                           FontSize="13"
                                           FontWeight="SemiBold"
                                           Margin="0,0,0,12"/>
+                                <TextBlock Text="Provider:" 
+                                          Foreground="{StaticResource TertiaryTextBrush}"
+                                          FontFamily="Space Grotesk"
+                                          FontSize="10"
+                                          FontWeight="Medium"
+                                          Margin="0,0,0,6"/>
+                                <ComboBox SelectedValue="{Binding Settings.AIProvider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                          SelectedValuePath="Content"
+                                          Background="#242424"
+                                          Foreground="#FFFFFF"
+                                          BorderBrush="#3A3A3A"
+                                          BorderThickness="1.5"
+                                          Padding="14,12"
+                                          FontSize="13"
+                                          FontFamily="Space Grotesk"
+                                          Height="45"
+                                          Margin="0,0,0,12">
+                                    <ComboBox.Resources>
+                                        <Style TargetType="Border">
+                                            <Setter Property="CornerRadius" Value="8"/>
+                                        </Style>
+                                    </ComboBox.Resources>
+                                    <ComboBoxItem Content="OpenRouter"/>
+                                    <ComboBoxItem Content="Groq"/>
+                                </ComboBox>
                                 <TextBlock Text="Model:" 
                                           Foreground="{StaticResource TertiaryTextBrush}"
                                           FontFamily="Space Grotesk"
                                           FontSize="10"
                                           FontWeight="Medium"
                                           Margin="0,0,0,6"/>
-                                <TextBox Text="{Binding Settings.OpenRouterModel, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Text="{Binding Settings.AIModel, UpdateSourceTrigger=PropertyChanged}"
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"
@@ -695,7 +720,7 @@
                                           FontSize="10"
                                           FontWeight="Medium"
                                           Margin="0,0,0,6"/>
-                                <TextBox Text="{Binding Settings.OpenRouterApiKey, UpdateSourceTrigger=PropertyChanged}"
+                                <TextBox Text="{Binding Settings.AIApiKey, UpdateSourceTrigger=PropertyChanged}"
                                         Background="#242424"
                                         Foreground="#FFFFFF"
                                         BorderBrush="#3A3A3A"

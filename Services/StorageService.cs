@@ -56,6 +56,19 @@ namespace Woobly.Services
                     if (userSettings != null)
                     {
                         // Merge settings, user settings take precedence
+                        if (!string.IsNullOrWhiteSpace(userSettings.AIProvider))
+                            settings.AIProvider = userSettings.AIProvider;
+
+                        if (!string.IsNullOrWhiteSpace(userSettings.AIApiKey))
+                            settings.AIApiKey = userSettings.AIApiKey;
+                        else if (!string.IsNullOrWhiteSpace(userSettings.OpenRouterApiKey))
+                            settings.AIApiKey = userSettings.OpenRouterApiKey;
+
+                        if (!string.IsNullOrWhiteSpace(userSettings.AIModel))
+                            settings.AIModel = userSettings.AIModel;
+                        else if (!string.IsNullOrWhiteSpace(userSettings.OpenRouterModel))
+                            settings.AIModel = userSettings.OpenRouterModel;
+
                         if (!string.IsNullOrWhiteSpace(userSettings.OpenRouterApiKey))
                             settings.OpenRouterApiKey = userSettings.OpenRouterApiKey;
                         if (!string.IsNullOrWhiteSpace(userSettings.OpenRouterModel))

@@ -4,6 +4,11 @@ namespace Woobly.Models
 {
     public class AppSettings
     {
+        public string AIProvider { get; set; } = "OpenRouter";
+        public string? AIApiKey { get; set; }
+        public string AIModel { get; set; } = "openai/gpt-3.5-turbo";
+
+        // Legacy fields retained for backward compatibility with existing settings files.
         public string? OpenRouterApiKey { get; set; }
         public string OpenRouterModel { get; set; } = "openai/gpt-3.5-turbo";
         public string? OpenWeatherApiKey { get; set; }
