@@ -7,6 +7,7 @@ using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Woobly.ViewModels;
+using Woobly.Services;
 using System.Diagnostics;
 using WinForms = System.Windows.Forms;
 using Drawing = System.Drawing;
@@ -74,6 +75,11 @@ public partial class MainWindow : Window
             var contextMenu = new WinForms.ContextMenuStrip();
             contextMenu.Items.Add("Show Woobly", null, (s, _) => ShowFromTray());
             contextMenu.Items.Add("Toggle Expand/Collapse", null, (s, _) => ToggleExpandState());
+            contextMenu.Items.Add(new WinForms.ToolStripSeparator());
+            contextMenu.Items.Add("About Woobly", null, (s, _) => ShowAboutDialog());
+            contextMenu.Items.Add("Report Issue", null, (s, _) => OpenUrl("https://github.com/yourusername/woobly/issues"));
+            contextMenu.Items.Add("Contact Developer", null, (s, _) => OpenUrl("mailto:developer@woobly.app?subject=Woobly%20Feedback"));
+            contextMenu.Items.Add("Feature Request", null, (s, _) => OpenUrl("https://github.com/yourusername/woobly/discussions"));
             contextMenu.Items.Add(new WinForms.ToolStripSeparator());
             contextMenu.Items.Add("Exit Woobly", null, (s, _) => ExitFromTray());
             _notifyIcon.ContextMenuStrip = contextMenu;
@@ -743,6 +749,65 @@ public partial class MainWindow : Window
         if (_isExpanded)
         {
             CollapseIsland();
+        }
+    }
+
+    private void ShowAboutDialog()
+    {
+        var version = typeof(MainWindow).Assembly.GetName().Version;
+        var developedBy = "Developed by Woobly Team";
+        var websiteUrl = "https://woobly.app"; // Replace with your actual website
+
+        var aboutMessage = $@"Woobly - Intelligent Desktop Companion
+
+Version: {version}
+
+{developedBy}
+
+About:
+An AI-powered Windows desktop companion inspired by Dynamic Island, featuring intelligent system monitoring, clipboard history, media control, and more.
+
+Features:
+• Real-time system information & weather
+• AI-powered assistant (OpenRouter/Groq)
+• Media playback control
+• Clipboard history management
+• Task memory & note taking
+• Call detection monitoring
+
+Visit our website: {websiteUrl}";
+
+        System.Windows.MessageBox.Show(aboutMessage, "About Woobly", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private void OpenUrl(string url)
+    {
+        try
+        {
+            if (url.StartsWith("mailto:"))
+            {
+                // Open in default email client
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            else
+            {
+                // Open in default browser
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Failed to open URL", ex);
+            System.Windows.MessageBox.Show($"Could not open link: {url}\n\nError: {ex.Message}", 
+                "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
 
